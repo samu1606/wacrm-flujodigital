@@ -1,0 +1,26 @@
+# Dokploy deploy para wacrm-flujodigital
+# Puerto: 8095
+
+services:
+  wacrm-flujodigital:
+    build: .
+    container_name: wacrm-flujodigital
+    restart: unless-stopped
+    ports:
+      - "8095:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - META_APP_SECRET=${META_APP_SECRET}
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-https://wacrm.elingesmartgrids.cloud}
+      - NEXT_PUBLIC_APP_LOCALE=${NEXT_PUBLIC_APP_LOCALE:-es}
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true
