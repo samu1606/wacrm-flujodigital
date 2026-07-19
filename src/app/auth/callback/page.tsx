@@ -12,44 +12,44 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuth = async () => {
       const supabase = createClient();
-
-      // Supabase returns the session in the URL hash for magiclink/OAuth
-      // The hash contains: #access_token=xxx&refresh_token=xxx&type=magiclink
       const hash = window.location.hash;
 
       if (hash && hash.includes("access_token")) {
-        // Parse the hash and set the session
         const params = new URLSearchParams(hash.substring(1));
         const accessToken = params.get("access_token");
         const refreshToken = params.get("refresh_token");
 
         if (accessToken && refreshToken) {
-          const { error: setError } = await supabase.auth.setSession({
+          const { error: authError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
 
-          if (!setError) {
+          if (!authError) {
             router.replace("/dashboard");
             return;
           }
-          setError(setError.message);
-        }
-      } else {
-        // Check for code param (PKCE flow)
-        const code = new URLSearchParams(window.location.search).get("code");
-        if (code) {
-          const { error: exchangeError } =
-            await supabase.auth.exchangeCodeForSession(code);
-          if (!exchangeError) {
-            router.replace("/dashboard");
-            return;
-          }
-          setError(exchangeError.message);
+          setError(authError.message);
+          setLoading(false);
+          return;
         }
       }
 
-      setError("No se pudo completar la autenticación");
+      // Check for code param (PKCE flow)
+      const code = new URLSearchParams(window.location.search).get("code");
+      if (code) {
+        const { error: exchangeErr } =
+          await supabase.auth.exchangeCodeForSession(code);
+        if (!exchangeErr) {
+          router.replace("/dashboard");
+          return;
+        }
+        setError(exchangeErr.message);
+        setLoading(false);
+        return;
+      }
+
+      setError("No se pudo completar la autenticación. Intentá de nuevo.");
       setLoading(false);
     };
 
@@ -72,7 +72,7 @@ export default function AuthCallback() {
       <div className="text-center">
         <p className="text-red-400 mb-4">{error}</p>
         <a href="/login" className="text-primary hover:underline">
-          Volver al login
+          Ir al login
         </a>
       </div>
     </div>
