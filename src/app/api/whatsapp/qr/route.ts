@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
 
-const EVO_URL = 'http://148.230.90.171:8096'
-// API key built from char codes to avoid build-time detection
-const EVO_KEY = String.fromCharCode(0x63, 0x32, 0x35, 0x38, 0x35, 0x31, 0x33, 0x32, 0x31, 0x61, 0x65, 0x65, 0x62, 0x34, 0x64, 0x62, 0x33, 0x65, 0x31, 0x31, 0x31, 0x39, 0x62, 0x36, 0x36, 0x37, 0x31, 0x38, 0x38, 0x37, 0x31, 0x32, 0x30, 0x61, 0x30, 0x39, 0x61, 0x65, 0x64, 0x64, 0x66, 0x30, 0x39, 0x30, 0x63, 0x66, 0x37, 0x66, 0x37, 0x35, 0x30, 0x35, 0x31, 0x30, 0x36, 0x66, 0x32, 0x37, 0x34, 0x35, 0x37, 0x37, 0x39, 0x33)
-const INSTANCE = 'flujodigital'
-
 export async function GET() {
+  const EVO_URL = process.env.EVOLUTION_API_URL || 'http://148.230.90.171:8096'
+  const EVO_KEY = process.env.EVOLUTION_API_KEY || ''
+  const INSTANCE = process.env.EVOLUTION_INSTANCE || 'flujodigital'
+
   try {
     const res = await fetch(`${EVO_URL}/instance/connect/${INSTANCE}`, {
       headers: { apikey: EVO_KEY },
@@ -26,18 +25,25 @@ export async function GET() {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>WhatsApp QR</title>
+<title>WhatsApp QR - FlujoDigital</title>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <style>
 *{margin:0;padding:0}
-body{background:#111;display:flex;justify-content:center;align-items:center;min-height:100vh;flex-direction:column}
-h2{color:#fff;margin-bottom:24px;font-family:sans-serif}
-#qr{background:#fff;padding:20px;border-radius:16px}
-p{color:#aaa;margin-top:20px;font-family:sans-serif;font-size:14px}
+body{background:#0a0a0a;display:flex;justify-content:center;align-items:center;min-height:100vh;flex-direction:column;font-family:-apple-system,sans-serif}
+.card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:20px;padding:40px;text-align:center}
+h2{color:#fff;margin-bottom:8px}
+.sub{color:#666;margin-bottom:24px;font-size:14px}
+#qr{background:#fff;padding:20px;border-radius:16px;display:inline-block}
+.hint{color:#555;margin-top:20px;font-size:13px}
+.hint span{color:#25d366}
 </style></head>
-<body><h2>📱 Escanea con WhatsApp</h2><div id="qr"></div>
-<p>Dispositivos Vinculados</p>
-<script>new QRCode(document.getElementById("qr"),{text:${JSON.stringify(data.code)},width:350,height:350,colorDark:"#000",colorLight:"#fff"});</script>
+<body><div class="card">
+<h2>📱 Escanea con WhatsApp</h2>
+<p class="sub">Dispositivos Vinculados → Vincular dispositivo</p>
+<div id="qr"></div>
+<p class="hint">WhatsApp → <span>Dispositivos Vinculados</span></p>
+</div>
+<script>new QRCode(document.getElementById("qr"),{text:${JSON.stringify(code)},width:320,height:320,colorDark:"#000",colorLight:"#fff"});</script>
 </body></html>`
 
     return new NextResponse(qrHtml, {
