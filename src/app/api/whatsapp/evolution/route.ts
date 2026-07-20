@@ -13,10 +13,17 @@ function supabaseAdmin() {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json()
-  const event = (body?.event || '').toLowerCase()
-  const data = body?.data || {}
-  const instance = body?.instance || 'flujodigital'
+  const rawBody = await request.json()
+  const event = (rawBody?.event || '').toLowerCase()
+  const data = rawBody?.data || {}
+  const instance = rawBody?.instance || 'flujodigital'
+
+  // DEBUG: Store raw webhook payload for debugging
+  if (event === 'messages.upsert' || event === 'messages.update') {
+    try {
+      await debugStore(rawBody, event)
+    } catch (_) {}
+  }
 
   // Ignore outbound messages
   if (data?.key?.fromMe) {
@@ -27,7 +34,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: 'ok', event })
   }
 
-  // Direct DB insert (skip Meta handler — Evolution bypasses Meta entirely)
+  // Direct DB insert
   try {
     await directInsert(data)
     return NextResponse.json({ status: 'direct_insert' })
@@ -36,13 +43,38 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// DEBUG: store raw webhook in Supabase
+async function debugStore(raw: any, event: string) {
+  const admin = supabaseAdmin()
+  const data = raw?.data || {}
+  const key = data?.key || {}
+  const msg = data?.message || {}
+  const msgId = key.id || 'DEBUG-' + Date.now()
+  const summary = JSON.stringify({
+    event,
+    fromMe: key.fromMe,
+    remoteJid: key.remoteJid,
+    messageType: data.messageType,
+    messageKeys: Object.keys(msg),
+    pushName: data.pushName,
+    dataKeys: Object.keys(data),
+    rawKeys: Object.keys(raw),
+  })
+  await admin.from('messages').insert({
+    message_id: msgId + '-DEBUG',
+    content_text: summary,
+    content_type: 'text',
+    sender_type: 'system',
+    status: 'delivered',
+    conversation_id: '162a3736-8e45-48fb-ada9-36f4f4a3c005', // Edwin's conversation
+  })
+}
+
 function normalizePhone(phone: string): string {
   return (phone || '').replace(/[@s.whatsapp.net]/g, '').replace(/[^0-9]/g, '')
 }
 
 async function directInsert(data: any) {
-  // Hard-coded account context for Evolution bridge tenant isolation.
-  // All contacts + conversations created here belong to this account.
   const ACCOUNT_ID = 'cefab3f3-574f-4f1b-b2e2-1436fa76f8dc'
   const CONFIG_USER_ID = 'bf2693ad-a969-44e5-91b5-dec62021a90c'
 
@@ -151,6 +183,7 @@ async function directInsert(data: any) {
     .eq('id', convId)
 }
 
+// Unused but kept for reference
 function buildMetaPayload(body: any, instance: string) {
   const data = body?.data || {}
   const key = data?.key || {}
