@@ -4,7 +4,7 @@
  */
 
 const EVO_BASE = process.env.EVOLUTION_API_URL || 'http://evolution-saas:8080';
-const EVO_KEY = proces…_KEY || process.env.AUTHENTICATION_API_KEY || '';
+const EVO_KEY = process.env.EVOLUTION_API_KEY || process.env.AUTHENTICATION_API_KEY || '';
 
 function evoHeaders(): Record<string, string> {
   return {

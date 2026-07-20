@@ -3,13 +3,11 @@
  * Maps CRM accounts ↔ Evolution API instances for multi-tenancy.
  */
 
-import { db } from '@/lib/db';
-import type { Database } from '@/lib/db/types';
-
-export type WhatsAppInstance = Database['public']['Tables']['whatsapp_instances']['Row'];
+import { createClient } from '@/lib/supabase/server';
 
 /** Get the active WhatsApp instance for an account. */
-export async function getAccountInstance(accountId: string): Promise<WhatsAppInstance | null> {
+export async function getAccountInstance(accountId: string) {
+  const db = await createClient();
   const { data, error } = await db
     .from('whatsapp_instances')
     .select('*')
@@ -24,7 +22,8 @@ export async function getAccountInstance(accountId: string): Promise<WhatsAppIns
 }
 
 /** Get any instance (connected or not) for an account. */
-export async function getAnyAccountInstance(accountId: string): Promise<WhatsAppInstance | null> {
+export async function getAnyAccountInstance(accountId: string) {
+  const db = await createClient();
   const { data, error } = await db
     .from('whatsapp_instances')
     .select('*')
@@ -38,9 +37,8 @@ export async function getAnyAccountInstance(accountId: string): Promise<WhatsApp
 }
 
 /** Find instance by Evolution instance name (for webhook routing). */
-export async function getInstanceByName(
-  evolutionInstanceName: string
-): Promise<WhatsAppInstance | null> {
+export async function getInstanceByName(evolutionInstanceName: string) {
+  const db = await createClient();
   const { data, error } = await db
     .from('whatsapp_instances')
     .select('*')
@@ -62,7 +60,8 @@ export async function upsertInstance(params: {
   profileName?: string;
   qrCode?: string | null;
   errorMessage?: string | null;
-}): Promise<WhatsAppInstance> {
+}) {
+  const db = await createClient();
   const { data, error } = await db
     .from('whatsapp_instances')
     .upsert(
@@ -101,7 +100,8 @@ export async function updateInstanceStatus(
     errorMessage?: string;
     qrCode?: string | null;
   }
-): Promise<void> {
+) {
+  const db = await createClient();
   const update: Record<string, unknown> = {
     status,
     updated_at: new Date().toISOString(),
@@ -121,7 +121,8 @@ export async function updateInstanceStatus(
 }
 
 /** Check if an account already has a working instance. */
-export async function hasActiveInstance(accountId: string): Promise<boolean> {
+export async function hasActiveInstance(accountId: string) {
+  const db = await createClient();
   const { count, error } = await db
     .from('whatsapp_instances')
     .select('*', { count: 'exact', head: true })
