@@ -54,9 +54,10 @@ new QRCode(document.getElementById("qrcode"), {
 </body>
 </html>`
 
-    return new NextResponse(html, {
+    const response = new NextResponse(html, {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
     })
+    return response
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })
   }
