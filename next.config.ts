@@ -135,7 +135,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/wasapea/:path*",
-        destination: "http://148.230.90.171:8097/:path*",
+        destination: "http://wasapea-landing:3000/:path*",
       },
     ];
   },
