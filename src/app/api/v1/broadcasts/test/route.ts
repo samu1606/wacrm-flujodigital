@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAndDeliverEvoBroadcast, BroadcastEvoError } from '@/lib/whatsapp/broadcast-evo';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const log: string[] = [];
 
   try {
