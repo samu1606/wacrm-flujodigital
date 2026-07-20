@@ -10,7 +10,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: 'ignored', reason: 'outbound' })
   }
 
-  if (!['MESSAGES_UPSERT', 'MESSAGES_UPDATE'].includes(event)) {
+  const normalizedEvent = event?.toLowerCase() || ''
+  if (!['messages.upsert', 'messages.update'].includes(normalizedEvent)) {
     return NextResponse.json({ status: 'ok', event })
   }
 
