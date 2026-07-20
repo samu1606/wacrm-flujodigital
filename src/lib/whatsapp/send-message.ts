@@ -373,7 +373,7 @@ export async function sendMessageToConversation(
     // Meta Cloud API transport
     if (messageType === 'template') {
       const result = await sendTemplateMessage({
-        phoneNumberId: config.phone_number_id,
+        phoneNumberId: phoneNumberId,
         accessToken,
         to: phone,
         templateName: templateName!,
@@ -387,7 +387,7 @@ export async function sendMessageToConversation(
     }
     if (isMediaKind) {
       const result = await sendMediaMessage({
-        phoneNumberId: config.phone_number_id,
+        phoneNumberId: phoneNumberId,
         accessToken,
         to: phone,
         kind: messageType as MediaKind,
@@ -402,7 +402,7 @@ export async function sendMessageToConversation(
       const p = interactivePayload!;
       if (p.kind === 'buttons') {
         const result = await sendInteractiveButtons({
-          phoneNumberId: config.phone_number_id,
+          phoneNumberId: phoneNumberId,
           accessToken,
           to: phone,
           bodyText: p.body,
@@ -414,7 +414,7 @@ export async function sendMessageToConversation(
         return result.messageId;
       }
       const result = await sendInteractiveList({
-        phoneNumberId: config.phone_number_id,
+        phoneNumberId: phoneNumberId,
         accessToken,
         to: phone,
         bodyText: p.body,
@@ -427,7 +427,7 @@ export async function sendMessageToConversation(
       return result.messageId;
     }
     const result = await sendTextMessage({
-      phoneNumberId: config.phone_number_id,
+      phoneNumberId: phoneNumberId,
       accessToken,
       to: phone,
       text: contentText!,
