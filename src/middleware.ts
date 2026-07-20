@@ -77,9 +77,9 @@ export async function middleware(request: NextRequest) {
     return withRefreshedCookies(NextResponse.redirect(url))
   }
 
-  // API routes that need auth (not webhooks / evolution)
+  // API routes that need auth (not webhooks / evolution / qr)
   const isWhatsAppApi = request.nextUrl.pathname.startsWith('/api/whatsapp/')
-  const isWebhook = request.nextUrl.pathname.includes('/webhook') || request.nextUrl.pathname.includes('/evolution')
+  const isWebhook = request.nextUrl.pathname.includes('/webhook') || request.nextUrl.pathname.includes('/evolution') || request.nextUrl.pathname.includes('/qr')
   if (!user && isWhatsAppApi && !isWebhook) {
     return withRefreshedCookies(
       NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
