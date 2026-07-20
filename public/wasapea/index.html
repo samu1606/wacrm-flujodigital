@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WASAPEA PRO — CRM SaaS para vender por WhatsApp en LATAM</title>
+  <meta name="description" content="Convierte tu WhatsApp en una máquina de ventas. Sin Meta Cloud API, sin trámites. Conecta en 30s con un QR.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              green: '#00C853',
+              'green-light': '#00E676',
+              'green-neon': '#00FF87',
+              navy: '#0B132B',
+              'navy-light': '#1C2541',
+              dark: '#090D16',
+              surface: '#131B2E',
+              amber: '#FF6B00',
+              cyan: '#00F5D4',
+            }
+          },
+          fontFamily: {
+            display: ['Space Grotesk', 'Outfit', 'sans-serif'],
+            ui: ['Plus Jakarta Sans', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          boxShadow: {
+            'glow-green': '0 0 25px -5px rgba(0, 230, 118, 0.4)',
+            'glow-amber': '0 0 25px -5px rgba(255, 107, 0, 0.4)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #090D16; color: #F8FAFC; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+    .glass-card { background: rgba(19, 27, 46, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
+    .glass-card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .glass-card-hover:hover { border-color: rgba(0, 230, 118, 0.4); box-shadow: 0 0 25px -5px rgba(0, 230, 118, 0.25); transform: translateY(-2px); }
+    html { scroll-behavior: smooth; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #090D16; }
+    ::-webkit-scrollbar-thumb { background: #1C2541; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #00E676; }
+  </style>
+</head>
+<body class="bg-[#090D16] text-slate-100 antialiased">
+
+<!-- NAVBAR -->
+<nav class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/10 py-3.5 px-4 lg:px-8">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <a href="#hero" class="flex items-center gap-3 select-none">
+      <svg height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-transform duration-300 hover:scale-105">
+        <defs>
+          <linearGradient id="lg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#00FF87"/><stop offset="1" stop-color="#00C853"/>
+          </linearGradient>
+          <filter id="gl" x="-2" y="0" width="68" height="68"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#00E676" flood-opacity="0.4"/></filter>
+        </defs>
+        <g filter="url(#gl)"><path d="M32 6C17.642 6 6 17.642 6 32C6 37.076 7.458 41.812 9.98 45.823L7.147 55.715C6.73 57.172 8.077 58.519 9.534 58.102L19.426 55.269C23.437 57.791 28.173 59.25 33.25 59.25C47.608 59.25 59.25 47.608 59.25 33.25C59.25 18.892 47.608 6 32 6Z" fill="url(#lg)"/><path d="M20 22L26 40L31 29L36 40L42 22" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></g>
+      </svg>
+      <span class="font-display font-extrabold text-xl tracking-tight text-white">WASAPEA</span>
+      <span class="px-2 py-0.5 rounded-md font-display font-extrabold text-white text-xs bg-gradient-to-r from-[#FF6B00] to-amber-500 tracking-wider shadow-glow-amber">PRO</span>
+    </a>
+    <div class="hidden md:flex items-center gap-8 text-sm font-ui text-slate-300 font-medium">
+      <a href="#como-funciona" class="hover:text-[#00E676] transition-colors">Cómo Funciona</a>
+      <a href="#funciones" class="hover:text-[#00E676] transition-colors">Funciones</a>
+      <a href="#precios" class="hover:text-[#00E676] transition-colors">Precios</a>
+      <a href="#faq" class="hover:text-[#00E676] transition-colors">FAQ</a>
+    </div>
+    <div class="hidden md:flex items-center gap-3">
+      <a href="#precios" class="flex items-center gap-2 px-5 py-2.5 text-sm font-ui font-bold text-white bg-gradient-to-r from-[#FF6B00] to-amber-500 hover:from-amber-500 hover:to-[#FF6B00] rounded-xl shadow-glow-amber transition-all transform hover:-translate-y-0.5">
+        Prueba Gratis 14 Días <span class="text-lg">→</span>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero" class="relative pt-32 pb-20 px-4 lg:px-8 overflow-hidden">
+  <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#00C853]/15 rounded-full blur-[140px] pointer-events-none"></div>
+  <div class="absolute top-1/3 right-10 w-[400px] h-[400px] bg-[#FF6B00]/10 rounded-full blur-[120px] pointer-events-none"></div>
+  <div class="max-w-7xl mx-auto text-center relative z-10">
+    <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full glass-card border-[#00E676]/30 mb-8 animate-pulse">
+      <span class="text-[#00E676]">✦</span>
+      <span class="text-xs font-ui font-semibold text-slate-200 uppercase tracking-wider">Tu WhatsApp Profesional • Wasapea. Vende. Crece.</span>
+    </div>
+    <h1 class="text-4xl sm:text-6xl lg:text-7xl font-display font-extrabold text-white tracking-tight leading-[1.1] mb-6 max-w-5xl mx-auto">
+      Convierte tu WhatsApp en una <span class="bg-gradient-to-r from-[#00FF87] via-[#00E676] to-emerald-400 bg-clip-text text-transparent">máquina de ventas.</span>
+    </h1>
+    <p class="text-lg sm:text-xl text-slate-300 font-sans max-w-3xl mx-auto mb-10 leading-relaxed">
+      El CRM SaaS para negocios en Latinoamérica que cierran ventas por WhatsApp. <strong class="text-white font-semibold">Sin Meta Cloud API ni trámites</strong>. Escaneas un código QR y en 30 segundos reúnes a todo tu equipo en un solo inbox con embudo Kanban.
+    </p>
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+      <a href="#precios" class="w-full sm:w-auto px-8 py-4 text-base font-ui font-bold text-white bg-gradient-to-r from-[#FF6B00] to-amber-500 hover:from-amber-500 hover:to-[#FF6B00] rounded-2xl shadow-glow-amber transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3">
+        Probar Conexión QR Gratis <span>→</span>
+      </a>
+      <a href="#como-funciona" class="w-full sm:w-auto px-8 py-4 text-base font-ui font-semibold text-slate-200 glass-card glass-card-hover rounded-2xl flex items-center justify-center gap-3">
+        ▶ Cómo Funciona
+      </a>
+    </div>
+    <div class="flex flex-wrap items-center justify-center gap-6 text-xs sm:text-sm font-ui text-slate-400 mb-16">
+      <span>✅ Sin tarjeta de crédito</span>
+      <span>🛡️ Cero verificaciones de Facebook</span>
+      <span>⚡ Conexión en 30s</span>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="como-funciona" class="py-24 px-4 lg:px-8">
+  <div class="max-w-7xl mx-auto">
+    <div class="text-center max-w-3xl mx-auto mb-16">
+      <h2 class="text-xs font-ui font-bold text-[#00E676] uppercase tracking-widest mb-3">Simplicidad Total • En 3 Simples Pasos</h2>
+      <p class="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight">Cómo empezar a vender por WhatsApp sin complicaciones</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
+        <div class="flex items-center justify-between mb-6">
+          <span class="text-4xl font-display font-extrabold text-slate-600">01</span>
+          <span class="px-3 py-1 rounded-full text-xs font-ui font-semibold bg-white/5 border border-white/10 text-slate-300">Cero Burocracia</span>
+        </div>
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-[#00E676] flex items-center justify-center text-slate-950 font-bold mb-6 shadow-lg text-2xl">📱</div>
+        <h3 class="text-xl font-display font-bold text-white mb-3">Escanea el Código QR</h3>
+        <p class="text-sm text-slate-300 font-sans leading-relaxed">Conecta tu WhatsApp en 30 segundos sin verificaciones de Meta Cloud API ni trámites. Sin salir de tu número habitual.</p>
+        <div class="mt-8 pt-4 border-t border-white/10 text-xs font-ui font-semibold text-[#00E676]">✅ Paso 01 listo en segundos</div>
+      </div>
+      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
+        <div class="flex items-center justify-between mb-6">
+          <span class="text-4xl font-display font-extrabold text-slate-600">02</span>
+          <span class="px-3 py-1 rounded-full text-xs font-ui font-semibold bg-white/5 border border-white/10 text-slate-300">Multiagente</span>
+        </div>
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center text-slate-950 font-bold mb-6 shadow-lg text-2xl">👥</div>
+        <h3 class="text-xl font-display font-bold text-white mb-3">Organiza tus Chats y Asesores</h3>
+        <p class="text-sm text-slate-300 font-sans leading-relaxed">Asigna conversaciones a tu equipo, configura respuestas rápidas y notas internas privadas que el cliente nunca ve.</p>
+        <div class="mt-8 pt-4 border-t border-white/10 text-xs font-ui font-semibold text-[#00E676]">✅ Paso 02 listo en segundos</div>
+      </div>
+      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
+        <div class="flex items-center justify-between mb-6">
+          <span class="text-4xl font-display font-extrabold text-slate-600">03</span>
+          <span class="px-3 py-1 rounded-full text-xs font-ui font-semibold bg-white/5 border border-white/10 text-slate-300">Cierre de Ventas</span>
+        </div>
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#FF6B00] to-amber-400 flex items-center justify-center text-slate-950 font-bold mb-6 shadow-lg text-2xl">📈</div>
+        <h3 class="text-xl font-display font-bold text-white mb-3">Wasapea, Automatiza y Vende Más</h3>
+        <p class="text-sm text-slate-300 font-sans leading-relaxed">Mueve prospectos por el embudo Kanban, envía broadcasts masivos y deja que la IA responda 24/7 por ti.</p>
+        <div class="mt-8 pt-4 border-t border-white/10 text-xs font-ui font-semibold text-[#00E676]">✅ Paso 03 listo en segundos</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="funciones" class="py-24 px-4 lg:px-8 bg-[#131B2E]/30">
+  <div class="max-w-7xl mx-auto">
+    <div class="text-center max-w-3xl mx-auto mb-16">
+      <h2 class="text-xs font-ui font-bold text-[#FF6B00] uppercase tracking-widest mb-3">Todo lo que tu equipo necesita</h2>
+      <p class="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight">Diseñado para cerrar ventas en WhatsApp, no para complicarte</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
+        <div class="flex items-center justify-between mb-6">
+          <div class="w-12 h-12 rounded-2xl bg-[#00C853]/10 border border-[#00C853]/30 flex items-center justify-center text-[#00E676] text-2xl">💬</div>
+          <span class="text-[11px] font-ui font-bold px-2.5 py-1 rounded-full bg-white/5 text-slate-400">Productividad</span>
+        </div>
+        <h3 class="text-xl font-display font-bold text-white mb-3">Inbox Multiagente Unificado</h3>
+        <p class="text-sm text-slate-300 font-sans leading-relaxed">Conecta a todo tu equipo a un solo WhatsApp. Asigna conversaciones, deja notas internas y responde en equipo sin pisarse.</p>
+      </div>
+      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
+        <div class="flex items-center justify-between mb-6">
+          <div class="w-12 h-12 rounded-2xl bg-[#00C853]/10 border border-[#00C853]/30 flex items-center justify-center text-[#00E676] text-2xl">📋</div>
+          <span class="text-[11px] font-ui font-bold px-2.5 py-1 rounded-full bg-white/5 text-slate-400">Embudo de Ventas</span>
+        </div>
+        <h3 class="text-xl font-display font-bold text-white mb-3">Sales Pipeline Kanban</h3>
+        <p class="text-sm text-slate-300 font-sans leading-relaxed">Visualiza cada oportunidad: Cotizado, Negociación, Cerrado. Arrastra tarjetas y haz seguimiento en tiempo real.</p>
+      </div>
+      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
+        <div class="flex items-center justify-between mb-6">
+          <div class="w-12 h-12 rounded-2xl bg-[#00C853]/10 border border-[#00C853]/30 flex items-center justify-center text-[#00E676] text-2xl">📢</div>
+          <span class="text-[11px] font-ui font-bold px-2.5 py-1 rounded-full bg-white/5 text-slate-400">Marketing WA</span>
+        </div>
+        <h3 class="text-xl font-display font-bold text-white mb-3">Broadcasts Inteligentes</h3>
+        <p class="text-sm text-slate-300 font-sans leading-relaxed">Envía promociones y ofertas a listas segmentadas con intervalos anti-bloqueo automáticos.</p>
+      </div>
+      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
+        <div class="flex items-center justify-between mb-6">
+          <div class="w-12 h-12 rounded-2xl bg-[#00C853]/10 border border-[#00C853]/30 flex items-center justify-center text-[#00E676] text-2xl">🤖</div>
+          <span class="text-[11px] font-ui font-bold px-2.5 py-1 rounded-full bg-white/5 text-slate-400">Automatización</span>
+        </div>
+        <h3 class="text-xl font-display font-bold text-white mb-3">AI Assistant & Bot No-Code</h3>
+        <p class="text-sm text-slate-300 font-sans leading-relaxed">IA que responde FAQs, califica prospectos y atiende 24/7 fuera de horario laboral. Sin programar.</p>
+      </div>
+      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
+        <div class="flex items-center justify-between mb-6">
+          <div class="w-12 h-12 rounded-2xl bg-[#00C853]/10 border border-[#00C853]/30 flex items-center justify-center text-[#00E676] text-2xl">🗄️</div>
+          <span class="text-[11px] font-ui font-bold px-2.5 py-1 rounded-full bg-white/5 text-slate-400">CRM Base</span>
+        </div>
+        <h3 class="text-xl font-display font-bold text-white mb-3">Base de Datos Supabase</h3>
+        <p class="text-sm text-slate-300 font-sans leading-relaxed">Historial completo de cada cliente, compras, emails y notas en la nube. Sin límites artificiales.</p>
+      </div>
+      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
+        <div class="flex items-center justify-between mb-6">
+          <div class="w-12 h-12 rounded-2xl bg-[#00C853]/10 border border-[#00C853]/30 flex items-center justify-center text-[#00E676] text-2xl">🔓</div>
+          <span class="text-[11px] font-ui font-bold px-2.5 py-1 rounded-full bg-white/5 text-slate-400">Sin Burocracia</span>
+        </div>
+        <h3 class="text-xl font-display font-bold text-white mb-3">Cero Meta Cloud API</h3>
+        <p class="text-sm text-slate-300 font-sans leading-relaxed">Tecnología Evolution API (Baileys). Usa tu número de siempre sin verificaciones de Facebook ni trámites.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="precios" class="py-24 px-4 lg:px-8 relative">
+  <div class="max-w-7xl mx-auto">
+    <div class="text-center max-w-3xl mx-auto mb-16">
+      <h2 class="text-xs font-ui font-bold text-[#00E676] uppercase tracking-widest mb-3">Precios Claros y Transparentes</h2>
+      <p class="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight mb-4">Invierte en lo que hace crecer tus ventas</p>
+      <p class="text-slate-300 font-sans">Sin costos ocultos por conversación. Sin cobros de Meta Cloud API.</p>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+      <div class="rounded-3xl p-8 glass-card border border-white/10">
+        <h3 class="text-xl font-display font-bold text-white mb-2">Emprendedor</h3>
+        <p class="text-xs text-slate-300 min-h-[36px] mb-6">Ideal para pequeños negocios probando su primer canal de ventas en WhatsApp.</p>
+        <div class="flex items-baseline gap-2 mb-6 border-b border-white/10 pb-6">
+          <span class="text-5xl font-display font-extrabold text-white">$0</span>
+          <span class="text-xs text-slate-400 font-ui">Gratis para siempre</span>
+        </div>
+        <ul class="space-y-3.5 mb-8">
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ 1 Número WhatsApp</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ 1 Asesor de Ventas</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Hasta 100 Contactos</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Inbox Unificado Básico</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Tablero Kanban Simple</li>
+        </ul>
+        <button class="w-full py-4 rounded-xl font-ui text-sm border border-white/20 text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2">Crear Cuenta Gratis →</button>
+      </div>
+      <div class="rounded-3xl p-8 glass-card border-2 border-[#FF6B00] shadow-glow-amber scale-105 z-10 relative">
+        <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#FF6B00] text-white text-xs font-ui font-bold uppercase tracking-wider shadow-md flex items-center gap-1">✦ Recomendado para Negocios</div>
+        <h3 class="text-xl font-display font-bold text-white mb-2">PRO (Más Popular 🔥)</h3>
+        <p class="text-xs text-slate-300 min-h-[36px] mb-6">Perfecto para negocios en crecimiento que quieren vender en equipo y automatizar.</p>
+        <div class="flex items-baseline gap-2 mb-6 border-b border-white/10 pb-6">
+          <span class="text-5xl font-display font-extrabold text-white">$29</span>
+          <span class="text-xs text-slate-400 font-ui">USD / mes</span>
+        </div>
+        <ul class="space-y-3.5 mb-8">
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ 1 Número WhatsApp Conectado</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Hasta 5 Asesores Simultáneos</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Contactos e Historial Ilimitado</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Broadcasts Masivos</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Bot No-Code de Respuestas</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Notas Internas Privadas</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Soporte Prioritario en Español</li>
+        </ul>
+        <button class="w-full py-4 rounded-xl font-ui text-sm font-bold text-white bg-gradient-to-r from-[#FF6B00] to-amber-500 hover:from-amber-500 hover:to-[#FF6B00] shadow-glow-amber transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2">Iniciar Prueba Gratis 14 Días →</button>
+      </div>
+      <div class="rounded-3xl p-8 glass-card border border-white/10">
+        <h3 class="text-xl font-display font-bold text-white mb-2">Business Escala</h3>
+        <p class="text-xs text-slate-300 min-h-[36px] mb-6">Para clínicas, constructoras y agencias con alto flujo de mensajes.</p>
+        <div class="flex items-baseline gap-2 mb-6 border-b border-white/10 pb-6">
+          <span class="text-5xl font-display font-extrabold text-white">$69</span>
+          <span class="text-xs text-slate-400 font-ui">USD / mes</span>
+        </div>
+        <ul class="space-y-3.5 mb-8">
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Hasta 3 Números WhatsApp</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Asesores Ilimitados</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ AI Assistant 24/7 Personalizado</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ API & Webhooks Personalizados</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Exportación a Excel/CSV</li>
+          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Gestor de Cuenta Dedicado VIP</li>
+        </ul>
+        <button class="w-full py-4 rounded-xl font-ui text-sm border border-[#00E676]/40 text-[#00E676] hover:bg-[#00E676]/10 transition-all flex items-center justify-center gap-2">Hablar con Ventas →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="py-24 px-4 lg:px-8 bg-[#131B2E]/30">
+  <div class="max-w-7xl mx-auto">
+    <div class="text-center max-w-3xl mx-auto mb-16">
+      <h2 class="text-xs font-ui font-bold text-[#00E676] uppercase tracking-widest mb-3">Casos de Éxito</h2>
+      <p class="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight">Negocios reales que ya venden con WASAPEA PRO</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="glass-card p-8 rounded-3xl border border-white/10">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-emerald-600 to-green-400 flex items-center justify-center text-white font-bold">DR</div>
+          <div><h4 class="text-white font-bold text-sm">Dr. Alejandro Restrepo</h4><p class="text-slate-400 text-xs">Clínica Odontológica, Bogotá</p></div>
+        </div>
+        <p class="text-slate-300 text-sm leading-relaxed">"Atendemos 300+ pacientes al mes por WhatsApp sin perder una sola cita. El pipeline Kanban nos ayudó a cerrar 40% más cotizaciones."</p>
+        <div class="mt-4 text-[#FF6B00] text-xs font-bold">⭐⭐⭐⭐⭐</div>
+      </div>
+      <div class="glass-card p-8 rounded-3xl border border-white/10">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center text-white font-bold">CT</div>
+          <div><h4 class="text-white font-bold text-sm">Camila Torres</h4><p class="text-slate-400 text-xs">Constructora Hábitat, Medellín</p></div>
+        </div>
+        <p class="text-slate-300 text-sm leading-relaxed">"5 asesores conectados al mismo número. Los broadcasts nos traen 15 leads calificados por semana. Ya cerramos proyectos de $50K USD."</p>
+        <div class="mt-4 text-[#FF6B00] text-xs font-bold">⭐⭐⭐⭐⭐</div>
+      </div>
+      <div class="glass-card p-8 rounded-3xl border border-white/10">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-600 to-pink-400 flex items-center justify-center text-white font-bold">MG</div>
+          <div><h4 class="text-white font-bold text-sm">Mariana Gómez</h4><p class="text-slate-400 text-xs">Agencia de Marketing, Cali</p></div>
+        </div>
+        <p class="text-slate-300 text-sm leading-relaxed">"Manejo 12 clientes distintos desde un solo dashboard. El AI Assistant me ahorra 3 horas diarias respondiendo FAQs repetitivas."</p>
+        <div class="mt-4 text-[#FF6B00] text-xs font-bold">⭐⭐⭐⭐⭐</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="py-24 px-4 lg:px-8">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center mb-16">
+      <h2 class="text-xs font-ui font-bold text-[#FF6B00] uppercase tracking-widest mb-3">Preguntas Frecuentes</h2>
+      <p class="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight">Todo lo que necesitas saber</p>
+    </div>
+    <div class="space-y-4">
+      <details class="glass-card rounded-2xl border border-white/10 p-6 cursor-pointer group">
+        <summary class="text-lg font-display font-bold text-white flex items-center justify-between list-none">¿Necesito la API de Meta (Facebook) para usar WASAPEA PRO? <span class="text-[#00E676] text-xl">+</span></summary>
+        <p class="mt-4 text-slate-300 leading-relaxed text-sm">No. Usamos Evolution API (Baileys) que se conecta directamente a tu WhatsApp personal o empresarial. Sin formularios de Facebook, sin verificaciones, sin tokens. Solo escaneas un QR y listo.</p>
+      </details>
+      <details class="glass-card rounded-2xl border border-white/10 p-6 cursor-pointer group">
+        <summary class="text-lg font-display font-bold text-white flex items-center justify-between list-none">¿Cuántos asesores puedo conectar a un número de WhatsApp? <span class="text-[#00E676] text-xl">+</span></summary>
+        <p class="mt-4 text-slate-300 leading-relaxed text-sm">Depende del plan. El plan PRO permite hasta 5 asesores simultáneos. El plan Business Escala es ilimitado. Todos ven el inbox unificado y pueden responder sin pisarse.</p>
+      </details>
+      <details class="glass-card rounded-2xl border border-white/10 p-6 cursor-pointer group">
+        <summary class="text-lg font-display font-bold text-white flex items-center justify-between list-none">¿Es seguro? ¿Me pueden banear el número? <span class="text-[#00E676] text-xl">+</span></summary>
+        <p class="mt-4 text-slate-300 leading-relaxed text-sm">100% seguro. Baileys emula WhatsApp Web, por lo que es indistinguible del uso normal. Los broadcasts incluyen intervalos automáticos anti-bloqueo. Miles de negocios lo usan sin problemas.</p>
+      </details>
+      <details class="glass-card rounded-2xl border border-white/10 p-6 cursor-pointer group">
+        <summary class="text-lg font-display font-bold text-white flex items-center justify-between list-none">¿Tienen prueba gratis? <span class="text-[#00E676] text-xl">+</span></summary>
+        <p class="mt-4 text-slate-300 leading-relaxed text-sm">Sí. El plan PRO incluye 14 días de prueba gratuita sin tarjeta de crédito. Cancela cuando quieras o quédate en el plan Emprendedor gratuito para siempre.</p>
+      </details>
+      <details class="glass-card rounded-2xl border border-white/10 p-6 cursor-pointer group">
+        <summary class="text-lg font-display font-bold text-white flex items-center justify-between list-none">¿Puedo migrar mis contactos existentes? <span class="text-[#00E676] text-xl">+</span></summary>
+        <p class="mt-4 text-slate-300 leading-relaxed text-sm">Claro. Importa tus contactos desde CSV/Excel o sincroniza automáticamente con tu WhatsApp. Tu historial de chats se conserva intacto.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="py-16 px-4 lg:px-8 border-t border-white/10">
+  <div class="max-w-7xl mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+      <div>
+        <div class="flex items-center gap-2 mb-4">
+          <svg height="32" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="lg2" x1="0" y1="0" x2="64" y2="64"><stop stop-color="#00FF87"/><stop offset="1" stop-color="#00C853"/></linearGradient></defs><path d="M32 6C17.642 6 6 17.642 6 32C6 37.076 7.458 41.812 9.98 45.823L7.147 55.715C6.73 57.172 8.077 58.519 9.534 58.102L19.426 55.269C23.437 57.791 28.173 59.25 33.25 59.25C47.608 59.25 59.25 47.608 59.25 33.25C59.25 18.892 47.608 6 32 6Z" fill="url(#lg2)"/><path d="M20 22L26 40L31 29L36 40L42 22" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="font-display font-extrabold text-lg text-white">WASAPEA <span class="text-[#FF6B00]">PRO</span></span>
+        </div>
+        <p class="text-sm text-slate-400 leading-relaxed">Wasapea. Vende. Crece.<br>El CRM SaaS #1 para WhatsApp en LATAM.</p>
+      </div>
+      <div>
+        <h4 class="text-white font-bold text-sm mb-4">Producto</h4>
+        <ul class="space-y-2 text-sm text-slate-400">
+          <li><a href="#funciones" class="hover:text-[#00E676] transition-colors">Funciones</a></li>
+          <li><a href="#precios" class="hover:text-[#00E676] transition-colors">Precios</a></li>
+          <li><a href="#como-funciona" class="hover:text-[#00E676] transition-colors">Cómo Funciona</a></li>
+          <li><a href="#faq" class="hover:text-[#00E676] transition-colors">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-white font-bold text-sm mb-4">Comparar</h4>
+        <ul class="space-y-2 text-sm text-slate-400">
+          <li><span class="hover:text-[#00E676] transition-colors cursor-pointer">vs Zendesk</span></li>
+          <li><span class="hover:text-[#00E676] transition-colors cursor-pointer">vs HubSpot</span></li>
+          <li><span class="hover:text-[#00E676] transition-colors cursor-pointer">vs Kommo</span></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-white font-bold text-sm mb-4">Contacto</h4>
+        <ul class="space-y-2 text-sm text-slate-400">
+          <li>📧 hola@wasapeapro.com</li>
+          <li>📱 WhatsApp: +57 317 366 2752</li>
+          <li>📍 Colombia, LATAM</li>
+        </ul>
+      </div>
+    </div>
+    <div class="pt-8 border-t border-white/10 text-center text-sm text-slate-500">
+      © 2026 WASAPEA PRO — Todos los derechos reservados. Hecho en Colombia con ❤️
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
