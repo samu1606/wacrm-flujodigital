@@ -1,19 +1,24 @@
 /**
  * POST /api/wompi/checkout — Return data for Wompi.js widget.
- *
- * Body: { plan: "emprendedor" | "pro" | "business" }
- * Returns: { publicKey, reference, amountInCents, currency, signatureIntegrity }
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 const PLAN_PRICES: Record<string, { name: string; cents: number }> = {
   emprendedor: { name: 'Emprendedor', cents: 15_00 },
   pro: { name: 'PRO', cents: 29_00 },
   business: { name: 'Business', cents: 69_00 },
 };
+
+function adminClient() {
+  return createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,20 +36,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
 
-    const { data: profile, error: profileErr } = await supabase
+    // Get or create user profile (use admin client to bypass RLS)
+    const admin = adminClient();
+    let { data: profile } = await admin
       .from('profiles')
       .select('account_id, email')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    // Log for debugging
-    if (profileErr || !profile) {
-      console.error('[wompi/checkout] Profile error:', profileErr?.message || 'not found', 'user_id:', user.id);
-      return NextResponse.json({ error: 'No account found', detail: 'Completa tu perfil primero' }, { status: 400 });
+    if (!profile) {
+      // Auto-create profile if it doesn't exist
+      const { data: newProfile, error: createErr } = await admin
+        .from('profiles')
+        .insert({
+          user_id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+        })
+        .select('account_id, email')
+        .single();
+
+      if (createErr || !newProfile) {
+        console.error('[wompi/checkout] Failed to create profile:', createErr?.message);
+        return NextResponse.json(
+          { error: 'No account found', detail: 'Intenta cerrar sesión y volver a entrar' },
+          { status: 400 }
+        );
+      }
+
+      profile = newProfile;
     }
 
     if (!profile?.account_id) {
-      return NextResponse.json({ error: 'No account found', detail: 'Tu cuenta no tiene ID de negocio' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'No account found', detail: 'Tu cuenta no está configurada' },
+        { status: 400 }
+      );
     }
 
     const reference = `wasapea-${planKey}-${Date.now()}-${profile.account_id.slice(0, 8)}`;
@@ -59,7 +86,7 @@ export async function POST(request: NextRequest) {
       .digest('hex');
 
     // Store pending payment record
-    await supabase.from('payments').insert({
+    await admin.from('payments').insert({
       account_id: profile.account_id,
       reference,
       plan: planKey,
