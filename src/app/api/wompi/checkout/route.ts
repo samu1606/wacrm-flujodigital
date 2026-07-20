@@ -31,14 +31,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileErr } = await supabase
       .from('profiles')
-      .select('account_id, email, full_name, phone')
+      .select('account_id, email')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
+
+    // Log for debugging
+    if (profileErr || !profile) {
+      console.error('[wompi/checkout] Profile error:', profileErr?.message || 'not found', 'user_id:', user.id);
+      return NextResponse.json({ error: 'No account found', detail: 'Completa tu perfil primero' }, { status: 400 });
+    }
 
     if (!profile?.account_id) {
-      return NextResponse.json({ error: 'No account found' }, { status: 400 });
+      return NextResponse.json({ error: 'No account found', detail: 'Tu cuenta no tiene ID de negocio' }, { status: 400 });
     }
 
     const reference = `wasapea-${planKey}-${Date.now()}-${profile.account_id.slice(0, 8)}`;
@@ -69,8 +75,8 @@ export async function POST(request: NextRequest) {
       currency,
       signatureIntegrity: signature,
       customerEmail: profile.email || user.email || '',
-      customerName: profile.full_name || user.user_metadata?.full_name || '',
-      customerPhone: profile.phone || '',
+      customerName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Cliente',
+      customerPhone: user.phone || '',
     });
   } catch (err) {
     console.error('[wompi/checkout] Error:', err);
