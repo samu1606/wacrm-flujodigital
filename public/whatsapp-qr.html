@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WhatsApp QR - FlujoDigital</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+body{background:#111;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;flex-direction:column;padding:20px}
+h2{color:#fff;font-family:sans-serif;margin-bottom:20px}
+#qrcode{background:#fff;padding:16px;border-radius:16px}
+p{color:#aaa;font-family:sans-serif;margin-top:20px;font-size:13px}
+</style>
+</head>
+<body>
+<h2>📱 Escanea este QR con WhatsApp</h2>
+<div id="qrcode"></div>
+<p>WhatsApp → Dispositivos Vinculados → Vincular un dispositivo</p>
+<script>
+new QRCode(document.getElementById("qrcode"), {
+  text: "2@Cw10+EmCeIxX+qTrFMJ5yrMoZAG/Q96X29tMOScoNOXa3seZ8AWjifhoPcb/L7h/oTMGktetcmp7lJRPP9zNKCCP8ecfiZn82s0=,gPIW8h3zybkFYSbQk545x2VetT8HnFZ5fmJOW839CA8=,mE9/Uqy6svtuJW37O1R/8M+ZOiL3WoHq/hhJdGFmWHU=,HIMvxtJQiYmFW+U57Gd1GF98bryxhVJ1N3osuoUGHEI=",
+  width: 350,
+  height: 350,
+  colorDark: "#000000",
+  colorLight: "#ffffff"
+});
+</script>
+</body>
+</html>
