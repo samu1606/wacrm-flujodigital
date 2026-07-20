@@ -37,7 +37,7 @@ const PLAN_DETAILS: Record<string, { name: string; price: string; features: stri
 
 declare global {
   interface Window {
-    WompiCheckout?: new (config: any) => any;
+    WidgetCheckout?: new (config: any) => any;
   }
 }
 
@@ -104,8 +104,8 @@ export function SubscriptionPanel() {
       }
 
       // Open Wompi widget
-      if (window.WompiCheckout) {
-        const checkout = new window.WompiCheckout({
+      if (window.WidgetCheckout) {
+        const checkout = new window.WidgetCheckout({
           currency: data.currency,
           amountInCents: data.amountInCents,
           reference: data.reference,
