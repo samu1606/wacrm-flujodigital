@@ -36,58 +36,54 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
 
-    // Get or create user profile (use admin client to bypass RLS)
+    // Try to get profile.account_id, fall back to profile.id
     const admin = adminClient();
+
+    // First try: get existing profile
     let { data: profile } = await admin
       .from('profiles')
-      .select('account_id, email')
+      .select('id, account_id, email')
       .eq('user_id', user.id)
       .maybeSingle();
 
+    // If no profile exists, create one
     if (!profile) {
-      // Auto-create profile if it doesn't exist
       const { data: newProfile, error: createErr } = await admin
         .from('profiles')
-        .insert({
-          user_id: user.id,
-          email: user.email,
-          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
-        })
-        .select('account_id, email')
+        .insert({ user_id: user.id, full_name: user.email || 'Usuario', email: user.email })
+        .select('id, account_id, email')
         .single();
 
-      if (createErr || !newProfile) {
-        console.error('[wompi/checkout] Failed to create profile:', createErr?.message);
-        return NextResponse.json(
-          { error: 'No account found', detail: 'Intenta cerrar sesión y volver a entrar' },
-          { status: 400 }
-        );
+      if (createErr) {
+        console.error('[wompi/checkout] Auto-create profile failed:', createErr.message);
+      } else if (newProfile) {
+        profile = newProfile;
       }
-
-      profile = newProfile;
     }
 
-    if (!profile?.account_id) {
+    if (!profile) {
       return NextResponse.json(
-        { error: 'No account found', detail: 'Tu cuenta no está configurada' },
+        { error: 'No account found', detail: 'Cierra sesión y vuelve a entrar' },
         { status: 400 }
       );
     }
 
-    const reference = `wasapea-${planKey}-${Date.now()}-${profile.account_id.slice(0, 8)}`;
+    // Use account_id if present, otherwise use profile.id
+    const accountRef = profile.account_id || profile.id;
+
+    const reference = `wasapea-${planKey}-${Date.now()}-${String(accountRef).slice(0, 8)}`;
     const currency = 'COP';
     const cents = plan.cents;
     const publicKey = process.env.WOMPI_PUBLIC_KEY || '';
     const integrityKey = process.env.WOMPI_EVENTS_KEY || '';
 
-    // Wompi integrity signature: SHA256(reference + amountCents + currency + integrityKey)
     const signature = createHash('sha256')
       .update(`${reference}${cents}${currency}${integrityKey}`)
       .digest('hex');
 
-    // Store pending payment record
+    // Store pending payment
     await admin.from('payments').insert({
-      account_id: profile.account_id,
+      account_id: accountRef,
       reference,
       plan: planKey,
       amount_cents: cents,
