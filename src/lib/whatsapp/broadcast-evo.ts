@@ -78,13 +78,14 @@ export async function createAndDeliverEvoBroadcast(
   const instanceName = instance.evolution_instance_name!;
   console.log(`[broadcast-evo] Using instance: ${instanceName} (status: ${instance.status})`);
 
-  // 3. Create broadcast row
+  // 3. Create broadcast row (use user_id, not account_id — broadcasts table is user-scoped)
   const { data: broadcast, error: bErr } = await db
     .from('broadcasts')
     .insert({
-      account_id: accountId,
       user_id: userId,
       name: name || `Difusión: ${messageText.slice(0, 50)}`,
+      template_name: '__evo_simple__',  // Evolution API doesn't use templates
+      template_language: 'es',
       status: 'sending',
       total_recipients: contacts.length,
     })
