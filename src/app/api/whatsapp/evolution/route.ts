@@ -98,14 +98,14 @@ export async function POST(request: NextRequest) {
     if (inst?.account_id) {
       accountId = inst.account_id
 
-      // Get first user of this account as config user
+      // Get first user of this account as config user (use user_id, not profiles.id)
       const { data: profiles } = await admin
         .from('profiles')
-        .select('id, account_id')
+        .select('user_id, account_id')
         .eq('account_id', accountId)
         .limit(1)
 
-      configUserId = profiles?.[0]?.id || ''
+      configUserId = profiles?.[0]?.user_id || ''
     }
   }
 
