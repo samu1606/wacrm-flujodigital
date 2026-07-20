@@ -84,8 +84,8 @@ export async function POST(request: NextRequest) {
   // ================================================================
   // Multi-tenant routing: find account by instance name
   // ================================================================
-  let accountId: string
-  let configUserId: string
+  let accountId = '';
+  let configUserId = '';
 
   if (instanceName) {
     // Look up the account for this Evolution instance
