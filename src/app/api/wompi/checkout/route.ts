@@ -15,6 +15,13 @@ const PLAN_PRICES: Record<string, { name: string; cents: number }> = {
   business: { name: 'Business', cents: 290_000_00 },        // $69 USD ≈ $290,000 COP
 };
 
+// Payment links de Wompi — si existen, redirigimos al link en vez del widget
+const PLAN_LINKS: Record<string, string | undefined> = {
+  emprendedor: process.env.NEXT_PUBLIC_WOMPI_LINK_EMPRENDEDOR,
+  pro: process.env.NEXT_PUBLIC_WOMPI_LINK_PRO,
+  business: process.env.NEXT_PUBLIC_WOMPI_LINK_BUSINESS,
+};
+
 function adminClient() {
   return createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,6 +43,12 @@ export async function POST(request: NextRequest) {
 
     if (!plan) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
+    }
+
+    // If a Wompi payment link exists for this plan, use it (bypasses widget)
+    const paymentLink = PLAN_LINKS[planKey];
+    if (paymentLink) {
+      return NextResponse.json({ paymentLink, plan: planKey, planName: plan.name });
     }
 
     // Try to get profile.account_id, fall back to profile.id

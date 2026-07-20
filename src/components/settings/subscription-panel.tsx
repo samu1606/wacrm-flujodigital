@@ -93,16 +93,23 @@ export function SubscriptionPanel() {
         return;
       }
 
-      // Wait for widget if not loaded yet
+      // Payment link mode — simple redirect, no widget
+      if (data.paymentLink) {
+        toast.info('Redirigiendo a la pasarela de pago...');
+        window.open(data.paymentLink, '_blank');
+        setCheckingOut(false);
+        return;
+      }
+
+      // Widget mode
       if (!window.WidgetCheckout) {
         toast.error('Cargando pasarela de pago... intenta en 5 segundos');
         setCheckingOut(false);
         return;
       }
 
-      // Minimal WidgetCheckout config — bare essentials only
       const checkout = new window.WidgetCheckout({
-        currency: 'COP',
+        currency: data.currency || 'COP',
         amountInCents: data.amountInCents,
         reference: data.reference,
         publicKey: data.publicKey,
