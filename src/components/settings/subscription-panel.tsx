@@ -110,8 +110,11 @@ export function SubscriptionPanel() {
           amountInCents: data.amountInCents,
           reference: data.reference,
           publicKey: data.publicKey,
-          signatureIntegrity: data.signatureIntegrity,
+          signature: {
+            integrity: data.signatureIntegrity,
+          },
           redirectUrl: window.location.origin + '/settings?tab=subscription',
+          expirationTime: new Date(Date.now() + 86400000).toISOString(), // 24h
           customerData: {
             email: data.customerEmail,
             fullName: data.customerName,
