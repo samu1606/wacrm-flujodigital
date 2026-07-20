@@ -36,6 +36,7 @@ function LoginPageInner() {
   // account. After a successful sign-in we send them to the join
   // page to accept rather than to /dashboard.
   const inviteToken = searchParams.get("invite");
+  const plan = searchParams.get("plan"); // From landing page pricing CTAs
   const t = useTranslations("LoginPage");
 
   const [email, setEmail] = useState("");
@@ -70,7 +71,9 @@ function LoginPageInner() {
     // reload the invite-accept flow already uses in join/[token].
     const destination = inviteToken
       ? `/join/${encodeURIComponent(inviteToken)}`
-      : "/dashboard";
+      : plan
+        ? `/settings?tab=subscription&checkout=${encodeURIComponent(plan)}`
+        : "/dashboard";
     window.location.href = destination;
   };
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2, Crown, Zap, Clock, CheckCircle2, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
@@ -43,6 +44,9 @@ declare global {
 
 export function SubscriptionPanel() {
   const { user, accountId, loading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
+  const checkoutPlan = searchParams.get('checkout'); // Auto-trigger from landing page
+  const autoTriggered = useRef(false);
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
   const [sub, setSub] = useState<SubInfo | null>(null);
@@ -61,6 +65,15 @@ export function SubscriptionPanel() {
     if (authLoading) return;
     fetchSub();
   }, [authLoading, fetchSub]);
+
+  // Auto-trigger checkout when arriving from landing page with ?checkout=plan
+  useEffect(() => {
+    if (!checkoutPlan || autoTriggered.current || authLoading || loading) return;
+    autoTriggered.current = true;
+    // Small delay to let widget load
+    const t = setTimeout(() => handleCheckout(checkoutPlan), 500);
+    return () => clearTimeout(t);
+  }, [checkoutPlan, authLoading, loading, widgetReady]);
 
   // Load Wompi widget script once
   useEffect(() => {
