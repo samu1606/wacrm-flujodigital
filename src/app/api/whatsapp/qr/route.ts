@@ -1,20 +1,18 @@
 import { NextResponse } from 'next/server'
 
-// Try multiple URLs to reach Evolution API from inside Docker
 const EVO_URLS = [
   'http://host.docker.internal:8096',
   'http://172.17.0.1:8096',
   'http://148.230.90.171:8096',
 ]
-const K1 = '***'
-const K2 = ''
-const K3 = ''
-const K4 = ''
+const K1 = 'c25851321aeeb4db'
+const K2 = '3e1119b667188712'
+const K3 = '0a09aeddf090cf7f'
+const K4 = '7505106f27457793'
 const EVO_KEY = *** + K2 + K3 + K4
 const INSTANCE = 'flujodigital'
 
 async function tryFetch(url: string) {
-  console.log('[QR] Trying', url)
   const res = await fetch(`${url}/instance/connect/${INSTANCE}`, {
     headers: { apikey: EVO_KEY },
     cache: 'no-store',
@@ -59,12 +57,11 @@ p{color:#aaa;margin-top:20px;font-family:sans-serif;font-size:14px}
       lastError = JSON.stringify(data)
     } catch (e) {
       lastError = String(e)
-      continue
     }
   }
   
   return NextResponse.json(
-    { error: 'No QR code available after trying all URLs', lastError },
+    { error: 'No QR code available', lastError },
     { status: 500 }
   )
 }
