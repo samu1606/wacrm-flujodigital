@@ -64,8 +64,6 @@ const DEFAULT_TEMPLATES: { label: string; value: string; message: string }[] = [
     message: '¡Hola {{name}}! ⭐\n\nSi estás contento/a con nuestro servicio, nos ayudaría muchísimo que nos dejaras una reseña en Google.\n\nToma solo 1 minuto: [link-a-tu-google-maps]\n\n¡Mil gracias! 🙏',
   },
 ];
-import { Badge } from '@/components/ui/badge';
-import { useTranslations } from 'next-intl';
 
 interface ContactTag {
   id: string;
