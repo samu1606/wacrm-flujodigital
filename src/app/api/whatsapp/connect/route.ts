@@ -83,28 +83,28 @@ export async function POST() {
       console.error('[whatsapp/connect] Webhook setup error:', e);
     });
 
-    // Store in DB
+    // Store in DB with QR from creation response
+    const qrBase64 = evolutionResult?.qrCodeBase64 || null;
     await upsertInstance({
       accountId,
       instanceName,
       evolutionInstanceId: evolutionResult?.instance?.instanceId,
       status: 'qr_ready',
-      qrCode: evolutionResult?.qrCode || null,
+      qrCode: qrBase64,
     });
 
-    // Get QR
-    const qr = await getInstanceQR(instanceName);
-
-    // Cache QR in DB
-    if (qr.qrCode) {
-      await updateInstanceStatus(instanceName, 'qr_ready', { qrCode: qr.qrCode });
+    // Also try fetching QR from connect endpoint (some Evolution versions)
+    if (!qrBase64) {
+      const qr = await getInstanceQR(instanceName);
+      if (qr.qrBase64) {
+        await updateInstanceStatus(instanceName, 'qr_ready', { qrCode: qr.qrBase64 });
+      }
     }
 
     return NextResponse.json({
       status: 'qr_ready',
       instanceName,
-      qrCode: qr.qrCode || null,
-      pairingCode: qr.pairingCode || null,
+      qrCode: qrBase64,
     });
   } catch (err) {
     console.error('[whatsapp/connect] Unexpected error:', err);

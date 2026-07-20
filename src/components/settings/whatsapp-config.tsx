@@ -340,7 +340,7 @@ h2{color:#fff;margin-bottom:4px;font-size:20px}
               <CardContent className="flex justify-center">
                 <div className="bg-white p-5 rounded-2xl inline-block">
                   <img
-                    src={`data:image/png;base64,${qrCode}`}
+                    src={qrCode}
                     alt="WhatsApp QR Code"
                     width={260}
                     height={260}

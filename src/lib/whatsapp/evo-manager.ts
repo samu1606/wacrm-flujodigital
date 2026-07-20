@@ -31,7 +31,10 @@ export interface EvoCreateResult {
     instanceId: string;
     status: string;
   };
-  qrCode?: string;
+  qrcode?: {
+    code: string;
+    base64: string;
+  };
 }
 
 /**
@@ -39,10 +42,12 @@ export interface EvoCreateResult {
  * Instance names should be unique per account.
  * Note: Evolution v2.3.7 rejects webhook params during creation (401).
  * Use setInstanceWebhook() separately after creation.
+ *
+ * Returns the decoded result with qrCodeBase64 for easy consumption.
  */
 export async function createEvolutionInstance(
   instanceName: string
-): Promise<EvoCreateResult> {
+): Promise<EvoCreateResult & { qrCodeBase64?: string }> {
   const res = await fetch(`${EVO_BASE}/instance/create`, {
     method: 'POST',
     headers: evoHeaders(),
@@ -60,7 +65,9 @@ export async function createEvolutionInstance(
   }
 
   const data = await res.json();
-  return data;
+  // Extract base64 QR from Evolution response
+  const qrCodeBase64 = data?.qrcode?.base64 || null;
+  return { ...data, qrCodeBase64 };
 }
 
 /**
@@ -103,7 +110,7 @@ export async function setInstanceWebhook(
  */
 export async function getInstanceQR(
   instanceName: string
-): Promise<{ qrCode: string | null; pairingCode: string | null }> {
+): Promise<{ qrCode: string | null; qrBase64: string | null; pairingCode: string | null }> {
   try {
     const res = await fetch(`${EVO_BASE}/instance/connect/${instanceName}`, {
       headers: { ...evoHeaders(), cache: 'no-store' },
@@ -111,21 +118,21 @@ export async function getInstanceQR(
 
     if (!res.ok) {
       const err = await res.text();
-      // If already connected, return null QR (that's OK)
       if (res.status === 400 || res.status === 404) {
-        return { qrCode: null, pairingCode: null };
+        return { qrCode: null, qrBase64: null, pairingCode: null };
       }
       throw new Error(`Evolution connect error ${res.status}: ${err}`);
     }
 
     const data = await res.json();
     return {
-      qrCode: data?.qrcode || data?.code || null,
+      qrCode: data?.code || data?.qrcode?.code || null,
+      qrBase64: data?.base64 || data?.qrcode?.base64 || null,
       pairingCode: data?.pairingCode || null,
     };
   } catch (err) {
     console.error('[evo-manager] QR fetch error:', err);
-    return { qrCode: null, pairingCode: null };
+    return { qrCode: null, qrBase64: null, pairingCode: null };
   }
 }
 
