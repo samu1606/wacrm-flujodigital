@@ -13,10 +13,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Radio, Plus, Loader2 } from 'lucide-react';
+import { Plus, Radio, Loader2, Zap } from 'lucide-react';
 import { useCan } from '@/hooks/use-can';
 import { GatedButton } from '@/components/ui/gated-button';
 import { getBroadcastStatus } from '@/lib/broadcast-status';
+import { QuickBroadcast } from '@/components/broadcasts/quick-broadcast';
 import { useTranslations } from 'next-intl';
 
 /**
@@ -62,6 +63,7 @@ export default function BroadcastsPage() {
   const t = useTranslations('Broadcasts.page');
   const tStatus = useTranslations('Broadcasts.status');
   const canCreate = useCan('send-messages');
+  const [showQuick, setShowQuick] = useState(false);
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -152,6 +154,13 @@ export default function BroadcastsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Quick Broadcast Dialog */}
+      <QuickBroadcast
+        open={showQuick}
+        onClose={() => setShowQuick(false)}
+        onSent={() => fetchBroadcasts()}
+      />
+
       {/* Top indeterminate progress bar: only visible while a broadcast
           is mid-send. Pure CSS animation so no extra deps. */}
       {anySending && (
@@ -187,15 +196,26 @@ export default function BroadcastsPage() {
             {t('subtitle')}
           </p>
         </div>
-        <GatedButton
-          canAct={canCreate}
-          gateReason="create broadcasts"
-          onClick={() => router.push('/broadcasts/new')}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" />
-          {t('newBroadcast')}
-        </GatedButton>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowQuick(true)}
+            className="gap-2"
+            disabled={!canCreate}
+          >
+            <Zap className="h-4 w-4 text-amber-500" />
+            Difusión Rápida
+          </Button>
+          <GatedButton
+            canAct={canCreate}
+            gateReason="create broadcasts"
+            onClick={() => router.push('/broadcasts/new')}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" />
+            {t('newBroadcast')}
+          </GatedButton>
+        </div>
       </div>
 
       {broadcasts.length === 0 ? (
@@ -214,6 +234,15 @@ export default function BroadcastsPage() {
             <Plus className="h-4 w-4" />
             {t('newBroadcast')}
           </GatedButton>
+          <Button
+            variant="outline"
+            onClick={() => setShowQuick(true)}
+            className="mt-2 gap-2"
+            disabled={!canCreate}
+          >
+            <Zap className="h-4 w-4 text-amber-500" />
+            Difusión Rápida
+          </Button>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
