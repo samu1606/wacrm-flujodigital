@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     // Get account_id
     const { data: profile } = await supabase
       .from('profiles')
-      .select('account_id')
+      .select('id, account_id')
       .eq('user_id', user.id)
       .maybeSingle();
 
