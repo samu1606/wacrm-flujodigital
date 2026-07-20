@@ -15,66 +15,36 @@ function supabaseAdmin() {
 export async function POST(request: NextRequest) {
   const rawBody = await request.json()
   const event = (rawBody?.event || '').toLowerCase()
-  const data = rawBody?.data || {}
+  
+  // Normalize: some versions send event name directly without data wrapper
+  let data = rawBody?.data || {}
+  
+  // If data has the message structure directly (e.g., evolution v2.3.7 
+  // might spread message fields at top level instead of nesting under data)
+  if (Object.keys(data).length === 0 && rawBody?.key?.remoteJid) {
+    data = rawBody
+  }
+  
   const instance = rawBody?.instance || 'flujodigital'
 
-  // DEBUG: Store raw webhook payload for debugging
-  if (event === 'messages.upsert' || event === 'messages.update') {
-    try {
-      await debugStore(rawBody, event)
-    } catch (_) {}
+  // Accept ALL message-related events
+  const isMessageEvent = event.includes('message') || 
+                         event.includes('upsert') || 
+                         data?.key?.remoteJid
+
+  if (!isMessageEvent) {
+    return NextResponse.json({ status: 'ok', event, reason: 'not_message_event' })
   }
 
-  // Ignore outbound messages
-  if (data?.key?.fromMe) {
+  // Ignore truly outbound messages
+  if (data?.key?.fromMe === true) {
     return NextResponse.json({ status: 'ignored', reason: 'outbound' })
   }
 
-  if (!['messages.upsert', 'messages.update'].includes(event)) {
-    return NextResponse.json({ status: 'ok', event })
-  }
-
-  // Direct DB insert
-  try {
-    await directInsert(data)
-    return NextResponse.json({ status: 'direct_insert' })
-  } catch (e: any) {
-    return NextResponse.json({ status: 'error', error: e.message }, { status: 500 })
-  }
+  return await processMessage(data, event)
 }
 
-// DEBUG: store raw webhook in Supabase
-async function debugStore(raw: any, event: string) {
-  const admin = supabaseAdmin()
-  const data = raw?.data || {}
-  const key = data?.key || {}
-  const msg = data?.message || {}
-  const msgId = key.id || 'DEBUG-' + Date.now()
-  const summary = JSON.stringify({
-    event,
-    fromMe: key.fromMe,
-    remoteJid: key.remoteJid,
-    messageType: data.messageType,
-    messageKeys: Object.keys(msg),
-    pushName: data.pushName,
-    dataKeys: Object.keys(data),
-    rawKeys: Object.keys(raw),
-  })
-  await admin.from('messages').insert({
-    message_id: msgId + '-DEBUG',
-    content_text: summary,
-    content_type: 'text',
-    sender_type: 'system',
-    status: 'delivered',
-    conversation_id: '162a3736-8e45-48fb-ada9-36f4f4a3c005', // Edwin's conversation
-  })
-}
-
-function normalizePhone(phone: string): string {
-  return (phone || '').replace(/[@s.whatsapp.net]/g, '').replace(/[^0-9]/g, '')
-}
-
-async function directInsert(data: any) {
+async function processMessage(data: any, event: string) {
   const ACCOUNT_ID = 'cefab3f3-574f-4f1b-b2e2-1436fa76f8dc'
   const CONFIG_USER_ID = 'bf2693ad-a969-44e5-91b5-dec62021a90c'
 
@@ -85,6 +55,10 @@ async function directInsert(data: any) {
   const phone = normalizePhone(remoteJid)
   const pushName = data?.pushName || 'WhatsApp Contact'
   const msgId = key.id || ''
+
+  if (!phone && !msgId) {
+    return NextResponse.json({ status: 'skipped', reason: 'no_phone_or_id' })
+  }
 
   // Get or create contact
   const { data: existingContacts } = await admin
@@ -102,7 +76,10 @@ async function directInsert(data: any) {
       .insert({ phone, name: pushName, account_id: ACCOUNT_ID, user_id: CONFIG_USER_ID })
       .select('id')
       .single()
-    if (cErr) throw new Error(`Contact insert: ${cErr.message}`)
+    if (cErr) {
+      console.error('[evo] Contact insert error:', cErr)
+      return NextResponse.json({ status: 'error', error: 'contact_insert: ' + cErr.message }, { status: 500 })
+    }
     contactId = newContact.id
   }
 
@@ -124,7 +101,10 @@ async function directInsert(data: any) {
       .insert({ contact_id: contactId, account_id: ACCOUNT_ID, user_id: CONFIG_USER_ID })
       .select('id')
       .single()
-    if (convErr) throw new Error(`Conversation insert: ${convErr.message}`)
+    if (convErr) {
+      console.error('[evo] Conv insert error:', convErr)
+      return NextResponse.json({ status: 'error', error: 'conv_insert: ' + convErr.message }, { status: 500 })
+    }
     convId = newConv.id
     unreadCount = 1
   }
@@ -134,26 +114,64 @@ async function directInsert(data: any) {
   let contentText = ''
   let mediaUrl: string | null = null
 
-  if ('conversation' in msg) {
-    contentText = msg.conversation || ''
-  } else if ('extendedTextMessage' in msg) {
-    contentText = msg.extendedTextMessage?.text || ''
-  } else if ('imageMessage' in msg) {
+  if (msg.conversation) {
+    contentText = msg.conversation
+  } else if (msg.extendedTextMessage?.text) {
+    contentText = msg.extendedTextMessage.text
+  } else if (msg.imageMessage) {
     contentType = 'image'
-    contentText = msg.imageMessage?.caption || ''
-    mediaUrl = msg.imageMessage?.url || null
-  } else if ('videoMessage' in msg) {
+    contentText = msg.imageMessage.caption || ''
+    mediaUrl = msg.imageMessage.url || null
+  } else if (msg.videoMessage) {
     contentType = 'video'
-    contentText = msg.videoMessage?.caption || ''
-    mediaUrl = msg.videoMessage?.url || null
-  } else if ('audioMessage' in msg) {
+    contentText = msg.videoMessage.caption || ''
+    mediaUrl = msg.videoMessage.url || null
+  } else if (msg.audioMessage) {
     contentType = 'audio'
-  } else if ('documentMessage' in msg) {
+  } else if (msg.documentMessage) {
     contentType = 'document'
-    contentText = msg.documentMessage?.fileName || ''
-    mediaUrl = msg.documentMessage?.url || null
+    contentText = msg.documentMessage.fileName || ''
+    mediaUrl = msg.documentMessage.url || null
+  } else if (msg.stickerMessage) {
+    contentType = 'image'
+    contentText = '📱 Sticker'
+  } else if (msg.locationMessage) {
+    contentType = 'text'
+    contentText = '📍 Ubicación'
+  } else if (msg.contactMessage) {
+    contentType = 'text'
+    contentText = '👤 Contacto'
+  } else if (msg.buttonsResponseMessage) {
+    contentText = msg.buttonsResponseMessage?.selectedDisplayText || 'Botón seleccionado'
+  } else if (msg.listResponseMessage) {
+    contentText = msg.listResponseMessage?.title || 'Lista seleccionada'
+  } else if (msg.reactionMessage) {
+    contentText = msg.reactionMessage?.text || '👍 Reaction'
+  } else if (msg.protocolMessage) {
+    // System messages like message deleted, etc.
+    return NextResponse.json({ status: 'ignored', reason: 'protocol_message' })
+  } else if (msg.ephemeralMessage) {
+    contentText = msg.ephemeralMessage?.message?.conversation || ''
+  } else if (msg.viewOnceMessage) {
+    const inner = msg.viewOnceMessage?.message
+    if (inner?.imageMessage) {
+      contentType = 'image'
+      contentText = '📷 View Once'
+      mediaUrl = inner.imageMessage.url || null
+    } else if (inner?.videoMessage) {
+      contentType = 'video'
+      contentText = '🎬 View Once'
+      mediaUrl = inner.videoMessage.url || null
+    } else {
+      contentText = '📩 View Once message'
+    }
   } else {
-    contentText = JSON.stringify(msg).substring(0, 1000)
+    // Unknown message type — log the keys for debugging
+    contentText = '[tipo: ' + Object.keys(msg).join(',') + ']'
+  }
+
+  if (!contentText && !mediaUrl) {
+    return NextResponse.json({ status: 'skipped', reason: 'empty_content' })
   }
 
   // Insert message
@@ -169,7 +187,10 @@ async function directInsert(data: any) {
       status: 'delivered',
     })
 
-  if (msgErr) throw new Error(`Message insert: ${msgErr.message}`)
+  if (msgErr) {
+    console.error('[evo] Msg insert error:', msgErr)
+    return NextResponse.json({ status: 'error', error: 'msg_insert: ' + msgErr.message }, { status: 500 })
+  }
 
   // Update conversation
   await admin
@@ -181,57 +202,18 @@ async function directInsert(data: any) {
       updated_at: new Date().toISOString(),
     })
     .eq('id', convId)
+
+  return NextResponse.json({ 
+    status: 'ok', 
+    phone, 
+    msgType: contentType, 
+    contentLen: contentText.length,
+    event
+  })
 }
 
-// Unused but kept for reference
-function buildMetaPayload(body: any, instance: string) {
-  const data = body?.data || {}
-  const key = data?.key || {}
-  const msg = data?.message || {}
-  const remoteJid = (key.remoteJid || '').replace('@s.whatsapp.net', '')
-  const pushName = data?.pushName || 'Contact'
-
-  let msgType = 'text'
-  let msgContent: Record<string, unknown> = {}
-
-  if ('conversation' in msg) {
-    msgContent = { body: msg.conversation }
-  } else if ('imageMessage' in msg) {
-    msgType = 'image'
-    msgContent = { id: msg.imageMessage?.url || '' }
-  } else if ('videoMessage' in msg) {
-    msgType = 'video'
-    msgContent = { id: msg.videoMessage?.url || '' }
-  } else if ('audioMessage' in msg) {
-    msgType = 'audio'
-    msgContent = { id: msg.audioMessage?.url || '' }
-  } else if ('documentMessage' in msg) {
-    msgType = 'document'
-    msgContent = { id: msg.documentMessage?.url || '', filename: msg.documentMessage?.fileName || '' }
-  } else {
-    msgContent = { body: JSON.stringify(msg).substring(0, 1000) }
-  }
-
-  return {
-    object: 'whatsapp_business_account',
-    entry: [{
-      id: instance,
-      changes: [{
-        value: {
-          messaging_product: 'whatsapp',
-          metadata: { display_phone_number: remoteJid, phone_number_id: instance },
-          contacts: [{ profile: { name: pushName }, wa_id: remoteJid }],
-          messages: [{
-            from: remoteJid,
-            id: key.id || '',
-            timestamp: String(data?.messageTimestamp || ''),
-            type: msgType,
-            [msgType]: msgContent,
-          }],
-        },
-      }],
-    }],
-  }
+function normalizePhone(phone: string): string {
+  return (phone || '').replace(/[@s.whatsapp.net]/g, '').replace(/[^0-9]/g, '')
 }
 
 export async function GET() {
