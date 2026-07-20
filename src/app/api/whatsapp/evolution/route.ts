@@ -27,25 +27,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: 'ok', event })
   }
 
-  // Try the Meta handler first (existing webhook pipeline)
-  const metaPayload = buildMetaPayload(body, instance)
-  const metaUrl = new URL('/api/whatsapp/webhook', request.url)
-
-  try {
-    const metaRes = await fetch(metaUrl.toString(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-evolution-bridge': 'true' },
-      body: JSON.stringify(metaPayload),
-    })
-    if (metaRes.ok) {
-      return NextResponse.json({ status: 'forwarded', wacrmStatus: metaRes.status })
-    }
-    console.warn('[evo] Meta handler returned', metaRes.status, '— falling back to direct insert')
-  } catch (e) {
-    console.warn('[evo] Meta handler unreachable, direct insert:', e)
-  }
-
-  // Fallback: direct DB insert
+  // Direct DB insert (skip Meta handler — Evolution bypasses Meta entirely)
   try {
     await directInsert(data)
     return NextResponse.json({ status: 'direct_insert' })
