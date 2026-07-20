@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { Loader2, Crown, Zap, Clock, CheckCircle2, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
@@ -35,11 +35,19 @@ const PLAN_DETAILS: Record<string, { name: string; price: string; features: stri
   },
 };
 
+declare global {
+  interface Window {
+    WompiCheckout?: new (config: any) => any;
+  }
+}
+
 export function SubscriptionPanel() {
   const { user, accountId, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
   const [sub, setSub] = useState<SubInfo | null>(null);
+  const [wompiLoaded, setWompiLoaded] = useState(false);
+  const wompiScriptRef = useRef<HTMLScriptElement | null>(null);
 
   const fetchSub = useCallback(async () => {
     try {
@@ -58,6 +66,27 @@ export function SubscriptionPanel() {
     fetchSub();
   }, [authLoading, fetchSub]);
 
+  // Load Wompi.js widget
+  useEffect(() => {
+    if (wompiLoaded) return;
+    if (document.querySelector('script[src*="checkout.wompi.co"]')) {
+      setWompiLoaded(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.wompi.co/widget.js';
+    script.async = true;
+    script.onload = () => setWompiLoaded(true);
+    script.onerror = () => console.warn('[wompi] widget script failed to load');
+    document.head.appendChild(script);
+    wompiScriptRef.current = script;
+    return () => {
+      if (wompiScriptRef.current) {
+        document.head.removeChild(wompiScriptRef.current);
+      }
+    };
+  }, [wompiLoaded]);
+
   async function handleCheckout(plan: string) {
     setCheckingOut(true);
     try {
@@ -74,11 +103,39 @@ export function SubscriptionPanel() {
         return;
       }
 
-      // Redirect to Wompi
-      if (data.redirectUrl) {
-        window.location.href = data.redirectUrl;
+      // Open Wompi widget
+      if (window.WompiCheckout) {
+        const checkout = new window.WompiCheckout({
+          currency: data.currency,
+          amountInCents: data.amountInCents,
+          reference: data.reference,
+          publicKey: data.publicKey,
+          signatureIntegrity: data.signatureIntegrity,
+          redirectUrl: window.location.origin + '/settings?tab=subscription',
+          customerData: {
+            email: data.customerEmail,
+            fullName: data.customerName,
+            phoneNumber: data.customerPhone,
+          },
+        });
+
+        checkout.open((result: any) => {
+          console.log('[wompi] result:', result);
+          const tx = result?.transaction;
+          if (tx?.status === 'APPROVED') {
+            toast.success('¡Pago aprobado! 🎉 Tu suscripción se activó.');
+            // Refresh subscription status
+            setTimeout(fetchSub, 2000);
+          } else if (tx?.status === 'PENDING') {
+            toast.info('Pago pendiente. Te notificaremos cuando se confirme.');
+            setTimeout(fetchSub, 5000);
+          } else {
+            toast.error(tx?.statusMessage || 'El pago no fue aprobado. Intenta de nuevo.');
+          }
+          setCheckingOut(false);
+        });
       } else {
-        toast.error('No se pudo generar el enlace de pago');
+        toast.error('Widget de pago no disponible. Actualiza la página e intenta de nuevo.');
         setCheckingOut(false);
       }
     } catch (err) {
@@ -203,7 +260,7 @@ export function SubscriptionPanel() {
                   <Button
                     size="sm"
                     onClick={() => handleCheckout(key)}
-                    disabled={checkingOut}
+                    disabled={checkingOut || !wompiLoaded}
                     className={
                       key === 'pro'
                         ? 'w-full bg-gradient-to-r from-[#FF6B00] to-amber-500 hover:from-amber-500 hover:to-[#FF6B00] text-white'
@@ -221,6 +278,9 @@ export function SubscriptionPanel() {
                 )}
               </div>
             ))}
+            {!wompiLoaded && (
+              <p className="text-xs text-muted-foreground text-center">Cargando pasarela de pago...</p>
+            )}
           </CardContent>
         </Card>
       </div>

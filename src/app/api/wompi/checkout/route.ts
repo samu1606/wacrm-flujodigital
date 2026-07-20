@@ -1,16 +1,16 @@
 /**
- * POST /api/wompi/checkout — Create a Wompi payment link for a plan.
+ * POST /api/wompi/checkout — Return data for Wompi.js widget.
  *
  * Body: { plan: "emprendedor" | "pro" | "business" }
- * Returns: { redirectUrl }
+ * Returns: { publicKey, reference, amountInCents, currency, signatureIntegrity }
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
-import { createWompiTransaction } from '@/lib/wompi/client';
 
 const PLAN_PRICES: Record<string, { name: string; cents: number }> = {
-  emprendedor: { name: 'Emprendedor', cents: 15_00 },  // $15 = 1500 cents
+  emprendedor: { name: 'Emprendedor', cents: 15_00 },
   pro: { name: 'PRO', cents: 29_00 },
   business: { name: 'Business', cents: 69_00 },
 };
@@ -31,10 +31,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
 
-    // Get user's account
     const { data: profile } = await supabase
       .from('profiles')
-      .select('account_id, email')
+      .select('account_id, email, full_name, phone')
       .eq('user_id', user.id)
       .single();
 
@@ -43,31 +42,35 @@ export async function POST(request: NextRequest) {
     }
 
     const reference = `wasapea-${planKey}-${Date.now()}-${profile.account_id.slice(0, 8)}`;
-    const returnUrl = `${request.nextUrl.origin}/settings?tab=subscription`;
+    const currency = 'COP';
+    const cents = plan.cents;
+    const publicKey = process.env.WOMPI_PUBLIC_KEY || '';
+    const integrityKey = process.env.WOMPI_EVENTS_KEY || '';
 
-    const tx = await createWompiTransaction({
-      amountInCents: plan.cents,
-      currency: 'COP',
-      customerEmail: profile.email || user.email || '',
-      reference,
-      returnUrl,
-    });
+    // Wompi integrity signature: SHA256(reference + amountCents + currency + integrityKey)
+    const signature = createHash('sha256')
+      .update(`${reference}${cents}${currency}${integrityKey}`)
+      .digest('hex');
 
-    // Log the pending payment in DB
+    // Store pending payment record
     await supabase.from('payments').insert({
       account_id: profile.account_id,
-      wompi_tx_id: tx.id,
       reference,
       plan: planKey,
-      amount_cents: plan.cents,
+      amount_cents: cents,
       status: 'pending',
       user_id: user.id,
     });
 
     return NextResponse.json({
-      redirectUrl: tx.redirectUrl,
-      txId: tx.id,
+      publicKey,
       reference,
+      amountInCents: cents,
+      currency,
+      signatureIntegrity: signature,
+      customerEmail: profile.email || user.email || '',
+      customerName: profile.full_name || user.user_metadata?.full_name || '',
+      customerPhone: profile.phone || '',
     });
   } catch (err) {
     console.error('[wompi/checkout] Error:', err);

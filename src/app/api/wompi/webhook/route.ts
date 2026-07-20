@@ -1,15 +1,13 @@
 /**
  * POST /api/wompi/webhook — Receive payment events from Wompi.
  *
- * Wompi sends events like:
- *   transaction.updated → payment status changed
- *
+ * Wompi sends events like: transaction.updated
  * Headers: x-event-checksum (HMAC-SHA256 of body with WOMPI_EVENTS_KEY)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { verifyWompiSignature, getWompiTransaction } from '@/lib/wompi/client';
+import { verifyWompiSignature } from '@/lib/wompi/client';
 
 let _admin: any = null;
 function supabaseAdmin() {
@@ -22,11 +20,42 @@ function supabaseAdmin() {
   return _admin;
 }
 
+async function activateSubscription(paymentRecord: any, txId: string) {
+  const admin = supabaseAdmin();
+  const now = new Date();
+  const endDate = new Date(now);
+  endDate.setMonth(endDate.getMonth() + 1);
+
+  const { error: subErr } = await admin
+    .from('subscriptions')
+    .upsert(
+      {
+        account_id: paymentRecord.account_id,
+        plan: paymentRecord.plan,
+        status: 'active',
+        trial_start: null,
+        trial_end: null,
+        current_period_start: now.toISOString(),
+        current_period_end: endDate.toISOString(),
+        last_payment_id: paymentRecord.id,
+        updated_at: now.toISOString(),
+      },
+      { onConflict: 'account_id' }
+    );
+
+  if (subErr) {
+    console.error('[wompi/webhook] Subscription upsert error:', subErr.message);
+    return false;
+  }
+
+  console.log(`[wompi/webhook] ✅ Activated: ${paymentRecord.plan} for ${paymentRecord.account_id}`);
+  return true;
+}
+
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const checksum = request.headers.get('x-event-checksum') || '';
 
-  // Verify signature
   if (!verifyWompiSignature(rawBody, checksum)) {
     console.error('[wompi/webhook] Invalid signature');
     return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
@@ -44,32 +73,48 @@ export async function POST(request: NextRequest) {
 
   console.log('[wompi/webhook] Event:', eventType, 'Tx:', txData?.id, 'Status:', txData?.status);
 
-  // Only handle transaction.updated events
   if (!eventType.includes('transaction')) {
-    return NextResponse.json({ status: 'ignored', reason: 'not_transaction' });
+    return NextResponse.json({ status: 'ignored' });
   }
 
   const txId = txData?.id;
   const status = txData?.status;
   const reference = txData?.reference;
 
-  if (!txId) {
-    return NextResponse.json({ status: 'skipped', reason: 'no_tx_id' });
+  if (!txId || !reference) {
+    return NextResponse.json({ status: 'skipped', reason: 'missing_data' });
   }
 
   const admin = supabaseAdmin();
 
-  // Find our payment record
-  const { data: payment } = await admin
+  // Find payment by txId first, then by reference (widget flow)
+  let { data: payment } = await admin
     .from('payments')
-    .select('id, account_id, plan, user_id')
+    .select('id, account_id, plan, user_id, wompi_tx_id')
     .eq('wompi_tx_id', txId)
     .maybeSingle();
 
   if (!payment) {
-    // Payment might be from a different source or test
-    console.warn('[wompi/webhook] Payment not found for tx:', txId);
-    return NextResponse.json({ status: 'skipped', reason: 'unknown_tx' });
+    // Look by reference (widget creates payment before transaction exists)
+    const { data: refPayment } = await admin
+      .from('payments')
+      .select('id, account_id, plan, user_id, wompi_tx_id')
+      .eq('reference', reference)
+      .maybeSingle();
+
+    if (refPayment) {
+      payment = refPayment;
+      // Link the transaction ID
+      await admin
+        .from('payments')
+        .update({ wompi_tx_id: txId })
+        .eq('id', payment.id);
+    }
+  }
+
+  if (!payment) {
+    console.warn('[wompi/webhook] Payment not found for tx:', txId, 'ref:', reference);
+    return NextResponse.json({ status: 'skipped', reason: 'unknown' });
   }
 
   // Update payment status
@@ -83,33 +128,7 @@ export async function POST(request: NextRequest) {
     .eq('id', payment.id);
 
   if (status === 'APPROVED') {
-    // Calculate subscription end date (monthly from now)
-    const now = new Date();
-    const endDate = new Date(now);
-    endDate.setMonth(endDate.getMonth() + 1);
-
-    // Upsert subscription
-    const { error: subErr } = await admin
-      .from('subscriptions')
-      .upsert(
-        {
-          account_id: payment.account_id,
-          plan: payment.plan,
-          status: 'active',
-          current_period_start: now.toISOString(),
-          current_period_end: endDate.toISOString(),
-          last_payment_id: payment.id,
-          updated_at: now.toISOString(),
-        },
-        { onConflict: 'account_id' }
-      );
-
-    if (subErr) {
-      console.error('[wompi/webhook] Subscription upsert error:', subErr.message);
-      return NextResponse.json({ status: 'error', error: subErr.message }, { status: 500 });
-    }
-
-    console.log(`[wompi/webhook] ✅ Subscription activated: ${payment.plan} for account ${payment.account_id}`);
+    await activateSubscription(payment, txId);
   }
 
   return NextResponse.json({ status: 'ok' });
