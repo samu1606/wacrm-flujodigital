@@ -46,6 +46,7 @@ import {
 } from '@/lib/whatsapp/interactive';
 import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption';
 import { supabaseAdmin } from '@/lib/flows/admin-client';
+import { rateLimiterCheck } from '@/lib/whatsapp/rate-limiter';
 import {
   sanitizePhoneForMeta,
   isValidE164,
@@ -310,6 +311,18 @@ export async function sendMessageToConversation(
     }
 
     console.log('[send-message] Using Evolution API transport, instance:', evoInstanceName);
+  }
+
+  // Rate limiting: prevent WhatsApp bans
+  if (useEvo) {
+    const limitCheck = rateLimiterCheck(evoInstanceName, 'message');
+    if (!limitCheck.allowed) {
+      throw new SendMessageError(
+        'rate_limited',
+        limitCheck.reason || 'Rate limit exceeded',
+        429
+      );
+    }
   }
 
   // Resolve the reply target to its Meta message_id. The parent must
