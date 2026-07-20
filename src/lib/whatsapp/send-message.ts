@@ -30,6 +30,12 @@ import {
   type MediaKind,
 } from '@/lib/whatsapp/meta-api';
 import {
+  evoSendText,
+  evoSendMedia,
+  isEvolutionProvider,
+  EVOLUTION_INSTANCE,
+} from '@/lib/whatsapp/evolution-api';
+import {
   validateInteractivePayload,
   interactivePayloadPreviewText,
   type InteractiveMessagePayload,
@@ -247,37 +253,46 @@ export async function sendMessageToConversation(
     );
   }
 
-  // WhatsApp config, account-scoped.
-  const { data: config, error: configError } = await db
-    .from('whatsapp_config')
-    .select('*')
-    .eq('account_id', accountId)
-    .single();
+  // WhatsApp config, account-scoped (Meta only).
+  const useEvo = isEvolutionProvider();
+  let accessToken = '';
+  let phoneNumberId = '';
 
-  if (configError || !config) {
-    throw new SendMessageError(
-      'whatsapp_not_configured',
-      'WhatsApp not configured. Please set up your WhatsApp integration first.',
-      400
-    );
-  }
-
-  const accessToken = decrypt(config.access_token);
-
-  // Self-heal legacy CBC ciphertexts. Fire-and-forget; idempotent.
-  if (isLegacyFormat(config.access_token)) {
-    void db
+  if (!useEvo) {
+    const { data: config, error: configError } = await db
       .from('whatsapp_config')
-      .update({ access_token: encrypt(accessToken) })
-      .eq('id', config.id)
-      .then(({ error }: { error: { message: string } | null }) => {
-        if (error) {
-          console.warn(
-            '[send-message] access_token GCM upgrade failed:',
-            error.message
-          );
-        }
-      });
+      .select('*')
+      .eq('account_id', accountId)
+      .single();
+
+    if (configError || !config) {
+      throw new SendMessageError(
+        'whatsapp_not_configured',
+        'WhatsApp not configured. Please set up your WhatsApp integration first.',
+        400
+      );
+    }
+
+    accessToken = decrypt(config.access_token);
+    phoneNumberId = config.phone_number_id;
+
+    // Self-heal legacy CBC ciphertexts. Fire-and-forget; idempotent.
+    if (isLegacyFormat(config.access_token)) {
+      void db
+        .from('whatsapp_config')
+        .update({ access_token: encrypt(accessToken) })
+        .eq('id', config.id)
+        .then(({ error }: { error: { message: string } | null }) => {
+          if (error) {
+            console.warn(
+              '[send-message] access_token GCM upgrade failed:',
+              error.message
+            );
+          }
+        });
+    }
+  } else {
+    console.log('[send-message] Using Evolution API transport, instance:', EVOLUTION_INSTANCE);
   }
 
   // Resolve the reply target to its Meta message_id. The parent must
@@ -330,6 +345,32 @@ export async function sendMessageToConversation(
   }
 
   const attempt = async (phone: string): Promise<string> => {
+    // Evolution API transport
+    if (useEvo) {
+      if (messageType === 'template') {
+        throw new SendMessageError(
+          'unsupported',
+          'Templates are not supported with Evolution API transport',
+          400
+        );
+      }
+      if (messageType === 'interactive') {
+        throw new SendMessageError(
+          'unsupported',
+          'Interactive messages are not supported with Evolution API transport',
+          400
+        );
+      }
+      if (isMediaKind) {
+        const result = await evoSendMedia(phone, messageType, mediaUrl!, contentText || undefined, filename || undefined);
+        return result.messageId;
+      }
+      // Fallback: plain text
+      const result = await evoSendText(phone, contentText || '', contextMessageId);
+      return result.messageId;
+    }
+
+    // Meta Cloud API transport
     if (messageType === 'template') {
       const result = await sendTemplateMessage({
         phoneNumberId: config.phone_number_id,

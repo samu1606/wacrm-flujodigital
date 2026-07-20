@@ -1,11 +1,19 @@
 /**
  * Evolution API helpers — drop-in replacement for Meta Cloud API when
  * WHATSAPP_PROVIDER=evolution.
+ *
+ * Shared auth helpers. Callers are responsible for selecting between
+ * Meta and Evolution at the transport layer.
  */
 
-const EVOLUTION_BASE = process.env.EVOLUTION_API_URL || 'http://148.230.90.171:8096'
-const EVOLUTION_KEY = process.env.EVOLUTION_API_KEY || ''
+const EVOLUTION_BASE = process.env.EVOLUTION_API_URL || 'http://evolution-saas:8080'
+const EVOLUTION_KEY = process.env.EVOLUTION_API_KEY || process.env.AUTHENTICATION_API_KEY || ''
 const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || 'flujodigital'
+
+/** Whether Evolution API is the active WhatsApp transport. */
+export function isEvolutionProvider(): boolean {
+  return process.env.WHATSAPP_PROVIDER === 'evolution'
+}
 
 function evoHeaders(): Record<string, string> {
   return {
@@ -66,3 +74,5 @@ export async function evoSendMedia(
   const data = await res.json()
   return { messageId: data?.key?.id || '' }
 }
+
+export { EVOLUTION_BASE, EVOLUTION_INSTANCE }
