@@ -84,10 +84,12 @@ export async function createAndDeliverEvoBroadcast(
   const instanceName = inst.evolution_instance_name!;
   console.log(`[broadcast-evo] Using instance: ${instanceName} (status: ${inst.status})`);
 
-  // 3. Create broadcast row (use user_id, not account_id — broadcasts table is user-scoped)
+  // 3. Create broadcast row (use user_id, NOT account_id — broadcasts table is user-scoped,
+  // BUT migration 017 added account_id NOT NULL, so we need both)
   const { data: broadcast, error: bErr } = await db
     .from('broadcasts')
     .insert({
+      account_id: accountId,
       user_id: userId,
       name: name || `Difusión: ${messageText.slice(0, 50)}`,
       template_name: '__evo_simple__',  // Evolution API doesn't use templates
