@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     const currency = 'COP';
     const cents = plan.cents;
     const publicKey = process.env.WOMPI_PUBLIC_KEY || '';
-    const integrityKey = process.env.WOMPI_EVENTS_KEY || '';
+    const integrityKey = process.env.WOMPI_INTEGRITY_KEY || '';
 
     const signature = createHash('sha256')
       .update(`${reference}${cents}${currency}${integrityKey}`)
