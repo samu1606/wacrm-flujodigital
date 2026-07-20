@@ -105,24 +105,24 @@ export function SubscriptionPanel() {
 
       // Open Wompi widget
       if (window.WidgetCheckout) {
-        const checkout = new window.WidgetCheckout({
-          currency: data.currency,
-          amountInCents: data.amountInCents,
-          reference: data.reference,
-          publicKey: data.publicKey,
-          signature: {
-            integrity: data.signatureIntegrity,
-          },
-          redirectUrl: window.location.origin + '/settings?tab=subscription',
-          expirationTime: new Date(Date.now() + 86400000).toISOString(), // 24h
-          customerData: {
-            email: data.customerEmail,
-            fullName: data.customerName,
-            phoneNumber: data.customerPhone,
-          },
-        });
+        try {
+          const checkout = new window.WidgetCheckout({
+            currency: data.currency,
+            amountInCents: data.amountInCents,
+            reference: data.reference,
+            publicKey: data.publicKey,
+            signature: {
+              integrity: data.signatureIntegrity,
+            },
+            redirectUrl: window.location.origin + '/settings?tab=subscription',
+            customerData: {
+              email: data.customerEmail,
+              fullName: data.customerName,
+              phoneNumber: data.customerPhone,
+            },
+          });
 
-        checkout.open((result: any) => {
+          checkout.open((result: any) => {
           console.log('[wompi] result:', result);
           const tx = result?.transaction;
           if (tx?.status === 'APPROVED') {
@@ -137,6 +137,11 @@ export function SubscriptionPanel() {
           }
           setCheckingOut(false);
         });
+        } catch (widgetErr: any) {
+          console.error('[wompi] widget error:', widgetErr);
+          toast.error('Widget: ' + (widgetErr?.message || 'Error'));
+          setCheckingOut(false);
+        }
       } else {
         toast.error('Widget de pago no disponible. Actualiza la página e intenta de nuevo.');
         setCheckingOut(false);
