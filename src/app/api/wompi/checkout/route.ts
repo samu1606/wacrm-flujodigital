@@ -7,10 +7,12 @@ import { createHash } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 
+// Wompi trabaja en COP. Planes en USD convertidos a COP (~$1 USD = $4,200 COP aprox).
+// Redondeamos a múltiplos de 1,000 COP para simplicidad.
 const PLAN_PRICES: Record<string, { name: string; cents: number }> = {
-  emprendedor: { name: 'Emprendedor', cents: 15_00 },
-  pro: { name: 'PRO', cents: 29_00 },
-  business: { name: 'Business', cents: 69_00 },
+  emprendedor: { name: 'Emprendedor', cents: 63_000_00 },  // $15 USD ≈ $63,000 COP
+  pro: { name: 'PRO', cents: 122_000_00 },                  // $29 USD ≈ $122,000 COP
+  business: { name: 'Business', cents: 290_000_00 },        // $69 USD ≈ $290,000 COP
 };
 
 function adminClient() {

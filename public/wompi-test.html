@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Wompi Widget Test</title>
+  <script src="https://checkout.wompi.co/widget.js"></script>
+</head>
+<body>
+  <h1>Wompi Widget Test</h1>
+  <button onclick="initWidget()">Abrir Widget</button>
+  <pre id="log"></pre>
+
+  <script>
+    window.addEventListener('error', (e) => {
+      document.getElementById('log').textContent += '\nERROR: ' + e.message;
+    });
+
+    function initWidget() {
+      const log = document.getElementById('log');
+      log.textContent = 'Iniciando...\n';
+
+      fetch('/api/wompi/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: 'emprendedor' })
+      })
+      .then(r => r.json())
+      .then(data => {
+        log.textContent += 'API response: ' + JSON.stringify(data, null, 2) + '\n';
+
+        if (data.error) {
+          log.textContent += 'API ERROR: ' + data.error + ': ' + data.detail + '\n';
+          return;
+        }
+
+        log.textContent += 'WidgetCheckout: ' + (typeof window.WidgetCheckout) + '\n';
+
+        try {
+          const checkout = new window.WidgetCheckout({
+            currency: data.currency,
+            amountInCents: data.amountInCents,
+            reference: data.reference,
+            publicKey: data.publicKey,
+            signature: { integrity: data.signatureIntegrity },
+            redirectUrl: window.location.origin + '/settings?tab=subscription',
+          });
+
+          log.textContent += 'Widget created!\n';
+
+          checkout.open((result) => {
+            log.textContent += 'Result: ' + JSON.stringify(result, null, 2) + '\n';
+          });
+        } catch(e) {
+          log.textContent += 'Widget error: ' + e.message + '\n' + e.stack + '\n';
+        }
+      })
+      .catch(e => {
+        log.textContent += 'Fetch error: ' + e.message + '\n';
+      });
+    }
+  </script>
+</body>
+</html>
