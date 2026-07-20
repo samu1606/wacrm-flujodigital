@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
   try {
     const res = await fetch(webhookUrl.toString(), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-evolution-bridge': 'true' },
       body: JSON.stringify(metaPayload),
     })
     return NextResponse.json({ status: 'forwarded', wacrmStatus: res.status })
