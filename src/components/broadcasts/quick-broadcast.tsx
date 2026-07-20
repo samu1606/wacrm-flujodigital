@@ -13,7 +13,57 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Radio, Send, X, Users, Loader2 } from 'lucide-react';
+import { Radio, Send, X, Users, Loader2, MessageSquare, ChevronDown } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { useTranslations } from 'next-intl';
+
+// ================================================================
+// Plantillas predeterminadas para difusiones rápidas
+// ================================================================
+const DEFAULT_TEMPLATES: { label: string; value: string; message: string }[] = [
+  {
+    label: '🎉 Oferta / Promoción',
+    value: 'promo',
+    message: '¡Hola {{name}}! 🚀\n\nTenemos una oferta especial para ti: **20% de descuento** en todos nuestros servicios durante este mes.\n\n¿Te interesa? Escríbeme y te doy más detalles.\n\n¡No te lo pierdas!',
+  },
+  {
+    label: '📋 Recordatorio de cita',
+    value: 'reminder',
+    message: 'Hola {{name}}, te recuerdo que tienes una cita agendada para **mañana a las 10:00 AM**.\n\nPor favor confírmame si puedes asistir. ¡Gracias!',
+  },
+  {
+    label: '👋 Bienvenida nuevo cliente',
+    value: 'welcome',
+    message: '¡Hola {{name}}! 👋\n\nBienvenido/a a nuestra comunidad. Soy Edwin de WASAPEA PRO y estoy aquí para ayudarte.\n\nCualquier duda que tengas, solo responde este mensaje.\n\n¡Gracias por confiar en nosotros! 💚',
+  },
+  {
+    label: '📞 Seguimiento post-venta',
+    value: 'followup',
+    message: 'Hola {{name}}, ¿cómo vas con el servicio? Quería saber si todo está funcionando bien o si necesitas algo.\n\nEstoy aquí para ayudarte. ¡Gracias! 😊',
+  },
+  {
+    label: '📢 Anuncio importante',
+    value: 'announcement',
+    message: 'Hola {{name}},\n\nQueremos informarte que tenemos **nuevos horarios de atención**:\n\n📅 Lunes a Viernes: 8 AM - 6 PM\n📅 Sábados: 9 AM - 1 PM\n\n¡Gracias por tu atención!',
+  },
+  {
+    label: '💰 Recordatorio de pago',
+    value: 'payment',
+    message: 'Hola {{name}},\n\nTe recordamos que el pago de tu servicio vence el **próximo viernes**. Por favor realiza el pago para evitar interrupción.\n\nSi ya lo hiciste, ignora este mensaje. ¡Gracias!',
+  },
+  {
+    label: '⭐ Pedir reseña',
+    value: 'review',
+    message: '¡Hola {{name}}! ⭐\n\nSi estás contento/a con nuestro servicio, nos ayudaría muchísimo que nos dejaras una reseña en Google.\n\nToma solo 1 minuto: [link-a-tu-google-maps]\n\n¡Mil gracias! 🙏',
+  },
+];
 import { Badge } from '@/components/ui/badge';
 import { useTranslations } from 'next-intl';
 
@@ -146,7 +196,27 @@ export function QuickBroadcast({ open, onClose, onSent }: QuickBroadcastProps) {
         <div className="space-y-4 py-2">
           {/* Message */}
           <div>
-            <label className="text-sm font-medium mb-1 block">Mensaje</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm font-medium">Mensaje</label>
+              <Select
+                onValueChange={(val) => {
+                  const tpl = DEFAULT_TEMPLATES.find(t => t.value === val);
+                  if (tpl) setMessage(tpl.message);
+                }}
+              >
+                <SelectTrigger className="h-7 w-auto gap-1 text-xs border-amber-500/30 bg-amber-950/20 text-amber-200 hover:bg-amber-950/40">
+                  <MessageSquare className="size-3" />
+                  <SelectValue placeholder="Usar plantilla..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEFAULT_TEMPLATES.map(tpl => (
+                    <SelectItem key={tpl.value} value={tpl.value} className="text-sm">
+                      {tpl.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
