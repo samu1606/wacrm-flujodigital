@@ -1,0 +1,132 @@
+{
+  "name": "WASAPEA - Welcome Email + Notify Edwin",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wasapea-welcome",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook (recibe lead)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar datos del lead para el email\nconst lead = $input.first().json;\n\nreturn {\n  email: lead.email,\n  name: lead.name || 'Futuro cliente',\n  plan: lead.plan || 'pro',\n  planName: lead.plan === 'emprendedor' ? 'Emprendedor' : lead.plan === 'business' ? 'Business Escala' : 'PRO',\n  planPrice: lead.plan === 'emprendedor' ? 'Gratis para siempre' : lead.plan === 'business' ? '$69 USD/mes' : '$29 USD/mes (50% OFF)',\n  discount: lead.plan === 'pro' ? '¡Felicidades! Tienes 50% OFF DE POR VIDA en Plan PRO 🎉' : 'Gracias por tu interés en WASAPEA PRO.',\n  source: lead.source || 'wasapea_landing',\n  date: new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })\n};"
+      },
+      "id": "prepare-data",
+      "name": "Preparar datos email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "samuel160612@gmail.com",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.discount.includes('50%') ? '🎉 ' : '' }}¡Bienvenido a WASAPEA PRO" + ($json.discount.includes('50%') ? ' — Tu 50% OFF está reservado!' : '!')",
+        "emailType": "text",
+        "message": "¡Hola{{ $json.name !== 'Futuro cliente' ? ' ' + $json.name : '' }}!\n\n🔥 {{ $json.discount }}\n\nEstos son los detalles de tu registro:\n\n📅 Fecha: {{ $json.date }}\n📦 Plan seleccionado: {{ $json.planName }}\n💰 Precio: {{ $json.planPrice }}\n\n⏳ ¿Qué sigue?\n\nEstamos ultimando los detalles del lanzamiento de WASAPEA PRO. En los próximos días recibirás:\n\n✅ Tu link de acceso al dashboard\n✅ Instrucciones para conectar tu WhatsApp en 30 segundos\n✅ Una demo personalizada por videollamada (opcional)\n\nMientras tanto, si tienes preguntas, responde a este correo o escríbenos por WhatsApp:\n📱 +57 317 366 2752\n\n---\nWASAPEA PRO — Wasapea. Vende. Crece.\nEquipo WASAPEA | Colombia, LATAM\n\nSi no solicitaste esto, ignora este mensaje.",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Enviar email bienvenida",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [650, 300],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "Gmail SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "8279852277",
+        "text": "=📬 *¡Nuevo Lead en WASAPEA PRO!*\n\n👤 *Nombre:* {{ $('Preparar datos email').item.json.name }}\n📧 *Email:* {{ $('Preparar datos email').item.json.email }}\n📦 *Plan:* {{ $('Preparar datos email').item.json.planName }}\n📅 *Fecha:* {{ $('Preparar datos email').item.json.date }}\n\n🔥 Revisa Supabase para más detalles.",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "notify-telegram",
+      "name": "Notificar a Edwin por Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 2,
+      "position": [650, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"¡Bienvenido! Revisa tu correo para confirmar.\"\n}"
+      },
+      "id": "response",
+      "name": "Responder OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Webhook (recibe lead)": {
+      "main": [
+        [
+          {
+            "node": "Preparar datos email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar datos email": {
+      "main": [
+        [
+          {
+            "node": "Enviar email bienvenida",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notificar a Edwin por Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar email bienvenida": {
+      "main": [
+        [
+          {
+            "node": "Responder OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notificar a Edwin por Telegram": {
+      "main": [
+        [
+          {
+            "node": "Responder OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "1.0.0",
+  "active": true
+}
