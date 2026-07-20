@@ -202,11 +202,11 @@ export function QuickBroadcast({ open, onClose, onSent }: QuickBroadcastProps) {
                   if (tpl) setMessage(tpl.message);
                 }}
               >
-                <SelectTrigger className="h-7 w-auto gap-1 text-xs border-amber-500/30 bg-amber-950/20 text-amber-200 hover:bg-amber-950/40">
+                <SelectTrigger className="h-7 w-auto gap-1 text-xs border-amber-500/30 bg-amber-950/20 text-amber-200 hover:bg-amber-950/40 min-w-[160px]">
                   <MessageSquare className="size-3" />
                   <SelectValue placeholder="Usar plantilla..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="min-w-[260px]">
                   {DEFAULT_TEMPLATES.map(tpl => (
                     <SelectItem key={tpl.value} value={tpl.value} className="text-sm">
                       {tpl.label}
