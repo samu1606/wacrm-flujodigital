@@ -37,11 +37,11 @@ export interface EvoCreateResult {
 /**
  * Create a new Evolution instance for a customer account.
  * Instance names should be unique per account.
- * Also configures the webhook URL for this instance.
+ * Note: Evolution v2.3.7 rejects webhook params during creation (401).
+ * Use setInstanceWebhook() separately after creation.
  */
 export async function createEvolutionInstance(
-  instanceName: string,
-  webhookUrl?: string
+  instanceName: string
 ): Promise<EvoCreateResult> {
   const res = await fetch(`${EVO_BASE}/instance/create`, {
     method: 'POST',
@@ -51,20 +51,6 @@ export async function createEvolutionInstance(
       token: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
       qrcode: true,
       integration: 'WHATSAPP-BAILEYS',
-      ...(webhookUrl ? {
-        webhook: webhookUrl,
-        webhook_by_events: true,
-        webhookEvents: [
-          'MESSAGES_UPSERT',
-          'MESSAGES_UPDATE',
-          'MESSAGES_DELETE',
-          'SEND_MESSAGE',
-          'CONTACTS',
-          'CHATS',
-          'CONNECTION_UPDATE',
-          'QRCODE_UPDATED',
-        ],
-      } : {}),
     }),
   });
 
@@ -75,6 +61,40 @@ export async function createEvolutionInstance(
 
   const data = await res.json();
   return data;
+}
+
+/**
+ * Set webhook for an Evolution instance (called after creation).
+ */
+export async function setInstanceWebhook(
+  instanceName: string,
+  webhookUrl: string
+): Promise<boolean> {
+  const res = await fetch(`${EVO_BASE}/webhook/set/${instanceName}`, {
+    method: 'POST',
+    headers: evoHeaders(),
+    body: JSON.stringify({
+      webhook: {
+        url: webhookUrl,
+        enabled: true,
+        webhookByEvents: true,
+        events: [
+          'MESSAGES_UPSERT',
+          'MESSAGES_UPDATE',
+          'MESSAGES_DELETE',
+          'SEND_MESSAGE',
+          'CONNECTION_UPDATE',
+          'QRCODE_UPDATED',
+        ],
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    console.error(`[evo-manager] Webhook set error for ${instanceName}: ${res.status}`);
+    return false;
+  }
+  return true;
 }
 
 /**

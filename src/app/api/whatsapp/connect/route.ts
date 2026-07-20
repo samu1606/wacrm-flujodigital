@@ -11,12 +11,18 @@ import {
   getInstanceQR,
   fetchInstance,
   deleteEvolutionInstance,
+  setInstanceWebhook,
 } from '@/lib/whatsapp/evo-manager';
 import {
   getAnyAccountInstance,
   upsertInstance,
   updateInstanceStatus,
 } from '@/lib/whatsapp/whatsapp-instances';
+
+function getWebhookUrl(): string {
+  const base = process.env.WACRM_BASE_URL || 'http://148.230.90.171:8095';
+  return `${base}/api/whatsapp/evolution`;
+}
 
 /** Create a new WhatsApp instance for the current account and return QR. */
 export async function POST() {
@@ -44,7 +50,6 @@ export async function POST() {
     const existing = await getAnyAccountInstance(accountId);
     if (existing) {
       if (existing.status === 'connected') {
-        // Already connected — return status
         return NextResponse.json({
           status: 'connected',
           instanceName: existing.evolution_instance_name,
@@ -52,7 +57,6 @@ export async function POST() {
           profileName: existing.profile_name,
         });
       }
-      // If in qr_ready or pending, refresh QR
       if (existing.status === 'qr_ready' && existing.qr_code) {
         return NextResponse.json({
           status: 'qr_ready',
@@ -60,29 +64,24 @@ export async function POST() {
           qrCode: existing.qr_code,
         });
       }
-      // Otherwise, delete and recreate
-      await deleteEvolutionInstance(existing.evolution_instance_name);
+      // Delete stale instance and recreate
+      await deleteEvolutionInstance(existing.evolution_instance_name).catch(() => {});
     }
 
-    // Generate unique instance name: wasapea-<first 8 chars of accountId>
+    // Generate unique instance name
     const accountSlug = accountId.replace(/-/g, '').slice(0, 8);
     const instanceName = `wasapea-${accountSlug}`;
 
     console.log(`[whatsapp/connect] Creating Evolution instance: ${instanceName}`);
 
-    // Create Evolution instance with webhook configured
-    const webhookUrl = `${process.env.WACRM_BASE_URL || `http://148.230.90.171:8095`}/api/whatsapp/evolution`;
+    // Create Evolution instance (no webhook — Evolution v2.3.7 rejects webhook params during creation)
+    const evolutionResult = await createEvolutionInstance(instanceName);
 
-    let evolutionResult;
-    try {
-      evolutionResult = await createEvolutionInstance(instanceName, webhookUrl);
-    } catch (err) {
-      console.error('[whatsapp/connect] Evolution create error:', err);
-      return NextResponse.json(
-        { error: 'Failed to create WhatsApp instance', detail: String(err) },
-        { status: 500 }
-      );
-    }
+    // Set webhook after creation (Evolution v2.3.7 workaround)
+    const webhookUrl = getWebhookUrl();
+    setInstanceWebhook(instanceName, webhookUrl).catch((e) => {
+      console.error('[whatsapp/connect] Webhook setup error:', e);
+    });
 
     // Store in DB
     await upsertInstance({
@@ -110,7 +109,7 @@ export async function POST() {
   } catch (err) {
     console.error('[whatsapp/connect] Unexpected error:', err);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to create WhatsApp instance', detail: String(err) },
       { status: 500 }
     );
   }
@@ -145,7 +144,6 @@ export async function GET() {
       try {
         const evoInstance = await fetchInstance(instance.evolution_instance_name);
         if (evoInstance && evoInstance.connectionStatus === 'open') {
-          // Update profile info if changed
           if (
             evoInstance.profileName !== instance.profile_name ||
             evoInstance.ownerJid !== instance.owner_jid
@@ -158,7 +156,7 @@ export async function GET() {
           }
         }
       } catch {
-        // Non-critical: Evolution might be temporarily unavailable
+        // Non-critical
       }
     }
 
@@ -208,7 +206,6 @@ export async function DELETE() {
       await deleteEvolutionInstance(instance.evolution_instance_name);
     } catch (err) {
       console.error('[whatsapp/connect] Evolution delete error:', err);
-      // Continue anyway — clean up our DB
     }
 
     // Mark as disconnected in DB
