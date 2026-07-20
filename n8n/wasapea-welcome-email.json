@@ -16,7 +16,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Preparar datos del lead para el email\nconst lead = $input.first().json;\n\nreturn {\n  email: lead.email,\n  name: lead.name || 'Futuro cliente',\n  plan: lead.plan || 'pro',\n  planName: lead.plan === 'emprendedor' ? 'Emprendedor' : lead.plan === 'business' ? 'Business Escala' : 'PRO',\n  planPrice: lead.plan === 'emprendedor' ? 'Gratis para siempre' : lead.plan === 'business' ? '$69 USD/mes' : '$29 USD/mes (50% OFF)',\n  discount: lead.plan === 'pro' ? '¡Felicidades! Tienes 50% OFF DE POR VIDA en Plan PRO 🎉' : 'Gracias por tu interés en WASAPEA PRO.',\n  source: lead.source || 'wasapea_landing',\n  date: new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })\n};"
+        "jsCode": "const lead = $input.first().json;\n\nconst planNames = {\n  emprendedor: 'Emprendedor (Gratis)',\n  pro: 'PRO 🔥 ($29/mes — 50% OFF de por vida)',\n  business: 'Business Escala ($69/mes)'\n};\n\nreturn {\n  email: lead.email,\n  name: lead.name || 'Futuro cliente',\n  plan: lead.plan || 'pro',\n  planName: planNames[lead.plan] || planNames.pro,\n  hasDiscount: lead.plan === 'pro' || !lead.plan,\n  date: new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })\n};"
       },
       "id": "prepare-data",
       "name": "Preparar datos email",
@@ -28,30 +28,30 @@
       "parameters": {
         "fromEmail": "samuel160612@gmail.com",
         "toEmail": "={{ $json.email }}",
-        "subject": "={{ $json.discount.includes('50%') ? '🎉 ' : '' }}¡Bienvenido a WASAPEA PRO" + ($json.discount.includes('50%') ? ' — Tu 50% OFF está reservado!' : '!')",
+        "subject": "={{ $json.hasDiscount ? '🎉 ¡Bienvenido a WASAPEA PRO! Tu 50% OFF está reservado' : '¡Bienvenido a WASAPEA PRO!' }}",
         "emailType": "text",
-        "message": "¡Hola{{ $json.name !== 'Futuro cliente' ? ' ' + $json.name : '' }}!\n\n🔥 {{ $json.discount }}\n\nEstos son los detalles de tu registro:\n\n📅 Fecha: {{ $json.date }}\n📦 Plan seleccionado: {{ $json.planName }}\n💰 Precio: {{ $json.planPrice }}\n\n⏳ ¿Qué sigue?\n\nEstamos ultimando los detalles del lanzamiento de WASAPEA PRO. En los próximos días recibirás:\n\n✅ Tu link de acceso al dashboard\n✅ Instrucciones para conectar tu WhatsApp en 30 segundos\n✅ Una demo personalizada por videollamada (opcional)\n\nMientras tanto, si tienes preguntas, responde a este correo o escríbenos por WhatsApp:\n📱 +57 317 366 2752\n\n---\nWASAPEA PRO — Wasapea. Vende. Crece.\nEquipo WASAPEA | Colombia, LATAM\n\nSi no solicitaste esto, ignora este mensaje.",
-        "options": {}
+        "message": "¡Hola{{ $json.name !== 'Futuro cliente' ? ' ' + $json.name : '' }}!\n\n{{ $json.hasDiscount ? '🔥 ¡FELICIDADES! Tienes 50% OFF DE POR VIDA en Plan PRO. Tu descuento está reservado.\n\n' : 'Gracias por tu interés en WASAPEA PRO.\n\n' }}Estos son los detalles de tu registro:\n\n📅 Fecha: {{ $json.date }}\n📦 Plan seleccionado: {{ $json.planName }}\n\n⏳ ¿Qué sigue?\n\nEstamos ultimando los detalles del lanzamiento de WASAPEA PRO. En los próximos días recibirás:\n\n✅ Tu link de acceso al dashboard\n✅ Instrucciones para conectar tu WhatsApp en 30 segundos con un QR\n✅ Una demo personalizada por videollamada (opcional, sin costo)\n\nMientras tanto, si tienes preguntas, responde a este correo o escríbenos por WhatsApp:\n📱 +57 317 366 2752\n\n---\nWASAPEA PRO — Wasapea. Vende. Crece.\nEquipo WASAPEA | Colombia, LATAM 🇨🇴\n\nSi no solicitaste esto, ignora este mensaje.",
+        "options": {
+          "appendAttribution": false
+        }
       },
       "id": "send-email",
       "name": "Enviar email bienvenida",
       "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2,
+      "typeVersion": 2.1,
       "position": [650, 300],
       "credentials": {
         "smtp": {
-          "id": "1",
-          "name": "Gmail SMTP"
+          "id": null,
+          "name": "Gmail WASAPEA"
         }
       }
     },
     {
       "parameters": {
         "chatId": "8279852277",
-        "text": "=📬 *¡Nuevo Lead en WASAPEA PRO!*\n\n👤 *Nombre:* {{ $('Preparar datos email').item.json.name }}\n📧 *Email:* {{ $('Preparar datos email').item.json.email }}\n📦 *Plan:* {{ $('Preparar datos email').item.json.planName }}\n📅 *Fecha:* {{ $('Preparar datos email').item.json.date }}\n\n🔥 Revisa Supabase para más detalles.",
-        "additionalFields": {
-          "parse_mode": "Markdown"
-        }
+        "text": "=📬 *¡Nuevo Lead en WASAPEA PRO!*\n\n👤 *{{ $('Preparar datos email').item.json.name }}*\n📧 `{{ $('Preparar datos email').item.json.email }}`\n📦 {{ $('Preparar datos email').item.json.planName }}\n📅 {{ $('Preparar datos email').item.json.date }}\n\n🔥 _Revisa Supabase → leads_",
+        "additionalFields": {}
       },
       "id": "notify-telegram",
       "name": "Notificar a Edwin por Telegram",
@@ -128,5 +128,5 @@
   "staticData": null,
   "pinData": {},
   "versionId": "1.0.0",
-  "active": true
+  "active": false
 }

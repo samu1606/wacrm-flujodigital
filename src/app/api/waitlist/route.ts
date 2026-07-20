@@ -1,9 +1,63 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import nodemailer from "nodemailer";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const n8nWebhookUrl = process.env.N8N_WEBHOOK_WELCOME_URL || "http://148.230.90.171:5678/webhook/wasapea-welcome";
+
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: "samuel160612@gmail.com",
+    pass: process.env.GMAIL_APP_PASSWORD || "",
+  },
+});
+
+function buildEmail(lead: { email: string; name?: string; plan: string }) {
+  const planNames: Record<string, string> = {
+    emprendedor: "Emprendedor (Gratis)",
+    pro: "PRO 🔥 ($29/mes — 50% OFF de por vida)",
+    business: "Business Escala ($69/mes)",
+  };
+  const planName = planNames[lead.plan] || planNames.pro;
+  const hasDiscount = lead.plan === "pro" || !lead.plan;
+  const date = new Date().toLocaleDateString("es-CO", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const name = lead.name && lead.name !== "Futuro cliente" ? ` ${lead.name}` : "";
+
+  return {
+    from: '"WASAPEA PRO" <samuel160612@gmail.com>',
+    to: lead.email,
+    subject: hasDiscount
+      ? "🎉 ¡Bienvenido a WASAPEA PRO! Tu 50% OFF está reservado"
+      : "¡Bienvenido a WASAPEA PRO!",
+    text: `¡Hola${name}!
+
+${hasDiscount ? "🔥 ¡FELICIDADES! Tienes 50% OFF DE POR VIDA en Plan PRO. Tu descuento está reservado.\n\n" : "Gracias por tu interés en WASAPEA PRO.\n\n"}Detalles de tu registro:
+
+📅 Fecha: ${date}
+📦 Plan: ${planName}
+
+⏳ ¿Qué sigue?
+
+Estamos ultimando el lanzamiento de WASAPEA PRO. Pronto recibirás:
+✅ Tu link de acceso al dashboard
+✅ Instrucciones para conectar tu WhatsApp en 30s con QR
+✅ Demo personalizada por videollamada (opcional, sin costo)
+
+¿Preguntas? Responde a este correo o escríbenos:
+📱 WhatsApp: +57 317 366 2752
+
+---
+WASAPEA PRO — Wasapea. Vende. Crece.
+Equipo WASAPEA | Colombia, LATAM 🇨🇴`,
+  };
+}
 
 export async function POST(request: Request) {
   try {
@@ -30,7 +84,10 @@ export async function POST(request: Request) {
     if (dbError) {
       if (dbError.code === "23505") {
         return NextResponse.json(
-          { error: "duplicate", message: "Este email ya está registrado. ¡Ya tienes tu descuento reservado!" },
+          {
+            error: "duplicate",
+            message: "Este email ya está registrado. ¡Ya tienes tu descuento reservado!",
+          },
           { status: 409 }
         );
       }
@@ -38,18 +95,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Error al guardar" }, { status: 500 });
     }
 
-    // 2. Disparar email de bienvenida via n8n (no bloqueante)
-    try {
-      await fetch(n8nWebhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, plan }),
-        signal: AbortSignal.timeout(8000),
-      });
-    } catch (webhookErr) {
-      console.warn("n8n webhook falló (email no enviado):", webhookErr);
-      // No fallamos — el lead ya está guardado
-    }
+    // 2. Enviar email de bienvenida (no bloqueante)
+    const mailOptions = buildEmail({ email, name, plan });
+    transporter.sendMail(mailOptions).catch((mailErr) => {
+      console.warn("Email no enviado:", mailErr.message);
+    });
 
     return NextResponse.json({
       success: true,
