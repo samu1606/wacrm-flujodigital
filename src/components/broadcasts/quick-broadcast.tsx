@@ -118,6 +118,7 @@ export function QuickBroadcast({ open, onClose, onSent }: QuickBroadcastProps) {
         onClose();
       } else {
         toast.error(data.error || 'Error al iniciar difusión');
+        if (data.detail) console.error('[quick-broadcast]', data.detail);
       }
     } catch (err) {
       toast.error('Error de conexión');

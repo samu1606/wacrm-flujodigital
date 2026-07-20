@@ -10,7 +10,6 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { evoSendText } from '@/lib/whatsapp/evolution-api';
-import { getAccountInstance } from '@/lib/whatsapp/whatsapp-instances';
 import { rateLimiterCheck } from '@/lib/whatsapp/rate-limiter';
 
 export class BroadcastEvoError extends Error {
@@ -58,25 +57,32 @@ export async function createAndDeliverEvoBroadcast(
     throw new BroadcastEvoError('bad_request', 'Selecciona al menos un contacto', 400);
   }
 
-  // 2. Verify Evolution instance is connected
-  const instance = await getAccountInstance(accountId);
-  if (!instance) {
+  // 2. Verify Evolution instance is connected (use passed-in DB client for RLS)
+  const { data: inst, error: instErr } = await db
+    .from('whatsapp_instances')
+    .select('evolution_instance_name, status, phone_number')
+    .eq('account_id', accountId)
+    .eq('status', 'connected')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (instErr || !inst) {
     throw new BroadcastEvoError(
       'no_instance',
-      'No hay WhatsApp conectado. Conecta tu WhatsApp primero en Configuración.',
+      `No hay WhatsApp conectado para esta cuenta (${instErr?.message || 'sin instancia'}). Conecta tu WhatsApp primero en Configuración.`,
       400,
     );
   }
-  if (instance.status !== 'connected') {
+  if (inst.status !== 'connected') {
     throw new BroadcastEvoError(
       'instance_not_connected',
-      `WhatsApp está ${instance.status}. Reconecta en Configuración.`,
+      `WhatsApp está ${inst.status}. Reconecta en Configuración.`,
       400,
     );
   }
 
-  const instanceName = instance.evolution_instance_name!;
-  console.log(`[broadcast-evo] Using instance: ${instanceName} (status: ${instance.status})`);
+  const instanceName = inst.evolution_instance_name!;
+  console.log(`[broadcast-evo] Using instance: ${instanceName} (status: ${inst.status})`);
 
   // 3. Create broadcast row (use user_id, not account_id — broadcasts table is user-scoped)
   const { data: broadcast, error: bErr } = await db

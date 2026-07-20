@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    const accountId = profile?.account_id;
+    const accountId = profile?.account_id || profile?.id;
     if (!accountId) {
       return NextResponse.json(
         { error: 'Perfil no vinculado a una cuenta' },
@@ -137,9 +137,12 @@ export async function POST(request: NextRequest) {
       );
     }
     console.error('[api/broadcasts/evo] Error:', err);
+    const message = err instanceof BroadcastEvoError
+      ? err.message
+      : (err instanceof Error ? err.message : 'Error interno');
     return NextResponse.json(
-      { error: 'Error interno al iniciar la difusión' },
-      { status: 500 },
+      { error: message, detail: String(err) },
+      { status: err instanceof BroadcastEvoError ? err.status : 500 },
     );
   }
 }
