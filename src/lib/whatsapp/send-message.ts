@@ -36,6 +36,10 @@ import {
   EVOLUTION_INSTANCE,
 } from '@/lib/whatsapp/evolution-api';
 import {
+  evoSendTextByInstance,
+  evoSendMediaByInstance,
+} from '@/lib/whatsapp/evo-manager';
+import {
   validateInteractivePayload,
   interactivePayloadPreviewText,
   type InteractiveMessagePayload,
@@ -257,6 +261,7 @@ export async function sendMessageToConversation(
   const useEvo = isEvolutionProvider();
   let accessToken = '';
   let phoneNumberId = '';
+  let evoInstanceName = EVOLUTION_INSTANCE; // default
 
   if (!useEvo) {
     const { data: config, error: configError } = await db
@@ -292,7 +297,19 @@ export async function sendMessageToConversation(
         });
     }
   } else {
-    console.log('[send-message] Using Evolution API transport, instance:', EVOLUTION_INSTANCE);
+    // Look up the account's Evolution instance for multi-tenant routing
+    const { data: instance } = await db
+      .from('whatsapp_instances')
+      .select('evolution_instance_name, status')
+      .eq('account_id', accountId)
+      .eq('status', 'connected')
+      .maybeSingle();
+
+    if (instance?.evolution_instance_name) {
+      evoInstanceName = instance.evolution_instance_name;
+    }
+
+    console.log('[send-message] Using Evolution API transport, instance:', evoInstanceName);
   }
 
   // Resolve the reply target to its Meta message_id. The parent must
@@ -362,11 +379,11 @@ export async function sendMessageToConversation(
         );
       }
       if (isMediaKind) {
-        const result = await evoSendMedia(phone, messageType, mediaUrl!, contentText || undefined, filename || undefined);
+        const result = await evoSendMediaByInstance(evoInstanceName, phone, messageType, mediaUrl!, contentText || undefined, filename || undefined);
         return result.messageId;
       }
       // Fallback: plain text
-      const result = await evoSendText(phone, contentText || '', contextMessageId);
+      const result = await evoSendTextByInstance(evoInstanceName, phone, contentText || '', contextMessageId);
       return result.messageId;
     }
 

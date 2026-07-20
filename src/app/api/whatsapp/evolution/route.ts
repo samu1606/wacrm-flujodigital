@@ -12,24 +12,64 @@ function supabaseAdmin() {
   return _adminClient
 }
 
+/**
+ * Multi-tenant Evolution API webhook handler.
+ * Routes incoming events to the correct account based on the instance name.
+ */
 export async function POST(request: NextRequest) {
   const rawBody = await request.json()
+
+  // Extract event and instance from payload
   const event = (rawBody?.event || '').toLowerCase()
-  
-  // Normalize: some versions send event name directly without data wrapper
   let data = rawBody?.data || {}
-  
-  // If data has the message structure directly (e.g., evolution v2.3.7 
-  // might spread message fields at top level instead of nesting under data)
+
+  // Evolution v2.3.7 might spread message fields at top level
   if (Object.keys(data).length === 0 && rawBody?.key?.remoteJid) {
     data = rawBody
   }
-  
-  const instance = rawBody?.instance || 'flujodigital'
 
-  // Accept ALL message-related events
-  const isMessageEvent = event.includes('message') || 
-                         event.includes('upsert') || 
+  const instanceName = rawBody?.instance || ''
+  const admin = supabaseAdmin()
+
+  // ================================================================
+  // Handle CONNECTION_UPDATE (status changes)
+  // ================================================================
+  if (event.includes('connection') || event.includes('qrcode') || event.includes('status')) {
+    if (!instanceName) {
+      return NextResponse.json({ status: 'ignored', reason: 'no_instance' })
+    }
+
+    // Update instance status in DB
+    const status = data?.connectionStatus || data?.state || 'unknown'
+    const mappedStatus = status === 'open' ? 'connected' :
+                         status === 'connecting' ? 'qr_ready' :
+                         status === 'close' ? 'disconnected' : 'pending'
+
+    const { error: updErr } = await admin
+      .from('whatsapp_instances')
+      .update({
+        status: mappedStatus,
+        ...(data?.qrcode ? { qr_code: data.qrcode } : {}),
+        ...(data?.ownerJid ? { owner_jid: data.ownerJid } : {}),
+        ...(data?.profileName ? { profile_name: data.profileName } : {}),
+        ...(rawBody?.ownerJid ? { owner_jid: rawBody.ownerJid } : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('evolution_instance_name', instanceName)
+
+    if (updErr) {
+      console.error(`[evo] Status update error for ${instanceName}:`, updErr.message)
+    }
+
+    console.log(`[evo] Status update: ${instanceName} → ${mappedStatus}`)
+    return NextResponse.json({ status: 'ok', instance: instanceName, newStatus: mappedStatus })
+  }
+
+  // ================================================================
+  // Handle MESSAGE events
+  // ================================================================
+  const isMessageEvent = event.includes('message') ||
+                         event.includes('upsert') ||
                          data?.key?.remoteJid
 
   if (!isMessageEvent) {
@@ -41,14 +81,57 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: 'ignored', reason: 'outbound' })
   }
 
-  return await processMessage(data, event)
+  // ================================================================
+  // Multi-tenant routing: find account by instance name
+  // ================================================================
+  let accountId: string
+  let configUserId: string
+
+  if (instanceName) {
+    // Look up the account for this Evolution instance
+    const { data: inst } = await admin
+      .from('whatsapp_instances')
+      .select('account_id, evolution_instance_name')
+      .eq('evolution_instance_name', instanceName)
+      .single()
+
+    if (inst?.account_id) {
+      accountId = inst.account_id
+
+      // Get first user of this account as config user
+      const { data: profiles } = await admin
+        .from('profiles')
+        .select('id, account_id')
+        .eq('account_id', accountId)
+        .limit(1)
+
+      configUserId = profiles?.[0]?.id || ''
+    }
+  }
+
+  // Fallback: use legacy hardcoded values for the admin instance
+  if (!accountId) {
+    console.warn('[evo] No account found for instance:', instanceName, '- using fallback')
+    accountId = 'cefab3f3-574f-4f1b-b2e2-1436fa76f8dc'
+    configUserId = 'bf2693ad-a969-44e5-91b5-dec62021a90c'
+  }
+
+  if (!configUserId) {
+    console.error('[evo] No user found for account:', accountId)
+    return NextResponse.json({ status: 'error', reason: 'no_user_for_account' }, { status: 500 })
+  }
+
+  return await processMessage(admin, data, event, accountId, configUserId, instanceName)
 }
 
-async function processMessage(data: any, event: string) {
-  const ACCOUNT_ID = 'cefab3f3-574f-4f1b-b2e2-1436fa76f8dc'
-  const CONFIG_USER_ID = 'bf2693ad-a969-44e5-91b5-dec62021a90c'
-
-  const admin = supabaseAdmin()
+async function processMessage(
+  admin: any,
+  data: any,
+  event: string,
+  accountId: string,
+  userId: string,
+  instanceName: string,
+) {
   const key = data?.key || {}
   const msg = data?.message || {}
   const remoteJid = (key.remoteJid || '').replace('@s.whatsapp.net', '')
@@ -60,11 +143,12 @@ async function processMessage(data: any, event: string) {
     return NextResponse.json({ status: 'skipped', reason: 'no_phone_or_id' })
   }
 
-  // Get or create contact
+  // Get or create contact (scoped to account)
   const { data: existingContacts } = await admin
     .from('contacts')
     .select('id, name')
     .eq('phone', phone)
+    .eq('account_id', accountId)
     .limit(1)
 
   let contactId: string
@@ -73,17 +157,17 @@ async function processMessage(data: any, event: string) {
   } else {
     const { data: newContact, error: cErr } = await admin
       .from('contacts')
-      .insert({ phone, name: pushName, account_id: ACCOUNT_ID, user_id: CONFIG_USER_ID })
+      .insert({ phone, name: pushName, account_id: accountId, user_id: userId })
       .select('id')
       .single()
     if (cErr) {
-      console.error('[evo] Contact insert error:', cErr)
+      console.error(`[evo] Contact insert error (${instanceName}):`, cErr.message)
       return NextResponse.json({ status: 'error', error: 'contact_insert: ' + cErr.message }, { status: 500 })
     }
     contactId = newContact.id
   }
 
-  // Get or create conversation
+  // Get or create conversation (scoped to account)
   const { data: existingConvs } = await admin
     .from('conversations')
     .select('id, unread_count')
@@ -98,11 +182,11 @@ async function processMessage(data: any, event: string) {
   } else {
     const { data: newConv, error: convErr } = await admin
       .from('conversations')
-      .insert({ contact_id: contactId, account_id: ACCOUNT_ID, user_id: CONFIG_USER_ID })
+      .insert({ contact_id: contactId, account_id: accountId, user_id: userId })
       .select('id')
       .single()
     if (convErr) {
-      console.error('[evo] Conv insert error:', convErr)
+      console.error(`[evo] Conv insert error (${instanceName}):`, convErr.message)
       return NextResponse.json({ status: 'error', error: 'conv_insert: ' + convErr.message }, { status: 500 })
     }
     convId = newConv.id
@@ -148,7 +232,6 @@ async function processMessage(data: any, event: string) {
   } else if (msg.reactionMessage) {
     contentText = msg.reactionMessage?.text || '👍 Reaction'
   } else if (msg.protocolMessage) {
-    // System messages like message deleted, etc.
     return NextResponse.json({ status: 'ignored', reason: 'protocol_message' })
   } else if (msg.ephemeralMessage) {
     contentText = msg.ephemeralMessage?.message?.conversation || ''
@@ -166,7 +249,6 @@ async function processMessage(data: any, event: string) {
       contentText = '📩 View Once message'
     }
   } else {
-    // Unknown message type — log the keys for debugging
     contentText = '[tipo: ' + Object.keys(msg).join(',') + ']'
   }
 
@@ -188,7 +270,7 @@ async function processMessage(data: any, event: string) {
     })
 
   if (msgErr) {
-    console.error('[evo] Msg insert error:', msgErr)
+    console.error(`[evo] Msg insert error (${instanceName}):`, msgErr.message)
     return NextResponse.json({ status: 'error', error: 'msg_insert: ' + msgErr.message }, { status: 500 })
   }
 
@@ -203,12 +285,14 @@ async function processMessage(data: any, event: string) {
     })
     .eq('id', convId)
 
-  return NextResponse.json({ 
-    status: 'ok', 
-    phone, 
-    msgType: contentType, 
+  return NextResponse.json({
+    status: 'ok',
+    instance: instanceName,
+    account: accountId,
+    phone,
+    msgType: contentType,
     contentLen: contentText.length,
-    event
+    event,
   })
 }
 
