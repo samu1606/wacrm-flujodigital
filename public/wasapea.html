@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -100,8 +101,8 @@
       El CRM SaaS para negocios en Latinoamérica que cierran ventas por WhatsApp. <strong class="text-white font-semibold">Sin Meta Cloud API ni trámites</strong>. Escaneas un código QR y en 30 segundos reúnes a todo tu equipo en un solo inbox con embudo Kanban.
     </p>
     <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-      <a href="#precios" class="w-full sm:w-auto px-8 py-4 text-base font-ui font-bold text-white bg-gradient-to-r from-[#FF6B00] to-amber-500 hover:from-amber-500 hover:to-[#FF6B00] rounded-2xl shadow-glow-amber transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3">
-        Probar Conexión QR Gratis <span>→</span>
+      <a href="#waitlist" class="w-full sm:w-auto px-8 py-4 text-base font-ui font-bold text-white bg-gradient-to-r from-[#FF6B00] to-amber-500 hover:from-amber-500 hover:to-[#FF6B00] rounded-2xl shadow-glow-amber transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3">
+        🔥 Reservar Acceso Anticipado <span>→</span>
       </a>
       <a href="#como-funciona" class="w-full sm:w-auto px-8 py-4 text-base font-ui font-semibold text-slate-200 glass-card glass-card-hover rounded-2xl flex items-center justify-center gap-3">
         ▶ Cómo Funciona
@@ -114,6 +115,103 @@
     </div>
   </div>
 </section>
+
+<!-- WAITLIST CAPTURE -->
+<section id="waitlist" class="py-24 px-4 lg:px-8 relative">
+  <div class="absolute inset-0 bg-gradient-to-b from-[#FF6B00]/5 to-transparent pointer-events-none"></div>
+  <div class="max-w-2xl mx-auto relative z-10">
+    <div class="text-center mb-10">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FF6B00]/20 border border-[#FF6B00]/40 mb-6">
+        <span class="text-xs font-ui font-bold text-[#FF6B00] uppercase tracking-wider">🔥 Early Access — Cupos Limitados</span>
+      </div>
+      <h2 class="text-3xl sm:text-4xl font-display font-extrabold text-white tracking-tight mb-4">
+        Los primeros 100 negocios obtienen <span class="text-[#FF6B00]">50% OFF de por vida</span> en Plan PRO
+      </h2>
+      <p class="text-slate-300">Reserva tu lugar. Sin tarjeta. Sin compromiso. Solo tu email.</p>
+    </div>
+
+    <div class="glass-card p-8 rounded-3xl border border-[#FF6B00]/30 shadow-glow-amber">
+      <form id="waitlist-form" class="space-y-5">
+        <div>
+          <label class="block text-sm font-ui font-semibold text-slate-300 mb-2">Nombre</label>
+          <input type="text" id="wl-name" placeholder="María Gómez"
+            class="w-full px-4 py-3.5 bg-[#0B132B] border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]/30 transition-all text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-ui font-semibold text-slate-300 mb-2">Email <span class="text-red-400">*</span></label>
+          <input type="email" id="wl-email" required placeholder="maria@negocio.com"
+            class="w-full px-4 py-3.5 bg-[#0B132B] border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]/30 transition-all text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-ui font-semibold text-slate-300 mb-3">Me interesa el plan:</label>
+          <div class="grid grid-cols-3 gap-3">
+            <label class="cursor-pointer">
+              <input type="radio" name="plan" value="emprendedor" class="peer hidden">
+              <div class="p-3 rounded-xl border border-white/10 text-center peer-checked:border-[#00E676] peer-checked:bg-[#00E676]/10 peer-checked:text-[#00E676] text-slate-400 text-sm font-ui font-semibold transition-all">Emprendedor<br><span class="text-xs font-normal">$0/mes</span></div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="plan" value="pro" checked class="peer hidden">
+              <div class="p-3 rounded-xl border border-[#FF6B00]/40 text-center peer-checked:border-[#FF6B00] peer-checked:bg-[#FF6B00]/10 peer-checked:text-[#FF6B00] text-[#FF6B00] text-sm font-ui font-bold transition-all">PRO 🔥<br><span class="text-xs font-normal">$29/mes</span></div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="plan" value="business" class="peer hidden">
+              <div class="p-3 rounded-xl border border-white/10 text-center peer-checked:border-[#00E676] peer-checked:bg-[#00E676]/10 peer-checked:text-[#00E676] text-slate-400 text-sm font-ui font-semibold transition-all">Business<br><span class="text-xs font-normal">$69/mes</span></div>
+            </label>
+          </div>
+        </div>
+        <button type="submit" id="wl-submit"
+          class="w-full py-4 rounded-xl font-ui font-bold text-white bg-gradient-to-r from-[#FF6B00] to-amber-500 hover:from-amber-500 hover:to-[#FF6B00] shadow-glow-amber transition-all transform hover:-translate-y-0.5 text-base flex items-center justify-center gap-2">
+          🔥 Quiero mi 50% OFF — Unirme Ahora <span>→</span>
+        </button>
+      </form>
+      <div id="wl-success" class="hidden text-center py-8">
+        <div class="text-5xl mb-4">🎉</div>
+        <h3 class="text-2xl font-display font-bold text-white mb-2">¡Estás dentro!</h3>
+        <p class="text-slate-300 mb-2">Recibirás un email de confirmación en los próximos minutos.</p>
+        <p class="text-xs text-[#00E676] font-ui">Tu 50% OFF de por vida está reservado 🚀</p>
+      </div>
+      <div id="wl-error" class="hidden text-center py-4">
+        <p class="text-red-400 text-sm">Error al guardar. Intenta de nuevo o escríbenos directo.</p>
+      </div>
+      <p class="text-[10px] text-slate-500 text-center mt-4">Sin spam. Solo avisos del lanzamiento y tu descuento.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+const SUPABASE_URL = 'https://zavabpchdvssvdnwtuyu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphdmFicGNoZHZzc3Zkbnd0dXl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNDA4NDgsImV4cCI6MjA5OTkxNjg0OH0.M8hLMnXcRHy_cR-RKo1k_JTEmGjPkcB5QDuT0OeWDm4';
+
+const form = document.getElementById('waitlist-form');
+const submitBtn = document.getElementById('wl-submit');
+const successDiv = document.getElementById('wl-success');
+const errorDiv = document.getElementById('wl-error');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('wl-name').value.trim();
+  const email = document.getElementById('wl-email').value.trim();
+  const plan = form.plan.value;
+  if (!email) return;
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '⏳ Guardando...';
+  errorDiv.classList.add('hidden');
+
+  try {
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { error } = await sb.from('leads').insert({ email, name: name || null, plan, source: 'wasapea_landing' });
+    if (error) throw error;
+    form.classList.add('hidden');
+    successDiv.classList.remove('hidden');
+  } catch (err) {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '🔥 Quiero mi 50% OFF — Unirme Ahora <span>→</span>';
+    errorDiv.classList.remove('hidden');
+    errorDiv.querySelector('p').textContent = err.code === '23505' ? '⚠️ Este email ya está registrado. ¡Ya tienes tu descuento reservado!' : '⚠️ Error de conexión. Intenta de nuevo.';
+  }
+});
+</script>
 
 <!-- HOW IT WORKS -->
 <section id="como-funciona" class="py-24 px-4 lg:px-8">
