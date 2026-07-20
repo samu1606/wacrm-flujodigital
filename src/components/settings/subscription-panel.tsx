@@ -46,19 +46,15 @@ export function SubscriptionPanel() {
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
   const [sub, setSub] = useState<SubInfo | null>(null);
-  const [wompiLoaded, setWompiLoaded] = useState(false);
-  const wompiScriptRef = useRef<HTMLScriptElement | null>(null);
+  const [widgetReady, setWidgetReady] = useState(false);
 
   const fetchSub = useCallback(async () => {
     try {
       const res = await fetch('/api/wompi/subscription');
       const data = await res.json();
       if (res.ok) setSub(data);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
+    } catch { /* */ }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -66,26 +62,20 @@ export function SubscriptionPanel() {
     fetchSub();
   }, [authLoading, fetchSub]);
 
-  // Load Wompi.js widget
+  // Load Wompi widget script once
   useEffect(() => {
-    if (wompiLoaded) return;
+    if (widgetReady) return;
     if (document.querySelector('script[src*="checkout.wompi.co"]')) {
-      setWompiLoaded(true);
+      setWidgetReady(true);
       return;
     }
-    const script = document.createElement('script');
-    script.src = 'https://checkout.wompi.co/widget.js';
-    script.async = true;
-    script.onload = () => setWompiLoaded(true);
-    script.onerror = () => console.warn('[wompi] widget script failed to load');
-    document.head.appendChild(script);
-    wompiScriptRef.current = script;
-    return () => {
-      if (wompiScriptRef.current) {
-        document.head.removeChild(wompiScriptRef.current);
-      }
-    };
-  }, [wompiLoaded]);
+    const s = document.createElement('script');
+    s.src = 'https://checkout.wompi.co/widget.js';
+    s.async = true;
+    s.onload = () => setWidgetReady(true);
+    s.onerror = () => console.warn('Wompi widget failed to load');
+    document.head.appendChild(s);
+  }, [widgetReady]);
 
   async function handleCheckout(plan: string) {
     setCheckingOut(true);
@@ -97,58 +87,46 @@ export function SubscriptionPanel() {
       });
       const data = await res.json();
 
-      if (!res.ok) {
+      if (!res.ok || data.error) {
         toast.error(data.error || 'Error al crear el pago');
         setCheckingOut(false);
         return;
       }
 
-      // Open Wompi widget
-      if (window.WidgetCheckout) {
-        try {
-          const checkout = new window.WidgetCheckout({
-            currency: data.currency,
-            amountInCents: data.amountInCents,
-            reference: data.reference,
-            publicKey: data.publicKey,
-            signature: {
-              integrity: data.signatureIntegrity,
-            },
-            redirectUrl: window.location.origin + '/settings?tab=subscription',
-            customerData: {
-              email: data.customerEmail,
-              fullName: data.customerName,
-              phoneNumber: data.customerPhone,
-            },
-          });
-
-          checkout.open((result: any) => {
-          console.log('[wompi] result:', result);
-          const tx = result?.transaction;
-          if (tx?.status === 'APPROVED') {
-            toast.success('¡Pago aprobado! 🎉 Tu suscripción se activó.');
-            // Refresh subscription status
-            setTimeout(fetchSub, 2000);
-          } else if (tx?.status === 'PENDING') {
-            toast.info('Pago pendiente. Te notificaremos cuando se confirme.');
-            setTimeout(fetchSub, 5000);
-          } else {
-            toast.error(tx?.statusMessage || 'El pago no fue aprobado. Intenta de nuevo.');
-          }
-          setCheckingOut(false);
-        });
-        } catch (widgetErr: any) {
-          console.error('[wompi] widget error:', widgetErr);
-          toast.error('Widget: ' + (widgetErr?.message || 'Error'));
-          setCheckingOut(false);
-        }
-      } else {
-        toast.error('Widget de pago no disponible. Actualiza la página e intenta de nuevo.');
+      // Wait for widget if not loaded yet
+      if (!window.WidgetCheckout) {
+        toast.error('Cargando pasarela de pago... intenta en 5 segundos');
         setCheckingOut(false);
+        return;
       }
-    } catch (err) {
-      console.error('Checkout error:', err);
-      toast.error('Error al procesar el pago');
+
+      // Minimal WidgetCheckout config — bare essentials only
+      const checkout = new window.WidgetCheckout({
+        currency: 'COP',
+        amountInCents: data.amountInCents,
+        reference: data.reference,
+        publicKey: data.publicKey,
+        signature: { integrity: data.signatureIntegrity },
+        redirectUrl: 'https://wasapeapro.com/settings?tab=subscription',
+      });
+
+      checkout.open((result: any) => {
+        console.log('[wompi] result:', result);
+        const tx = result?.transaction;
+        if (tx?.status === 'APPROVED') {
+          toast.success('¡Pago aprobado! 🎉');
+          setTimeout(fetchSub, 3000);
+        } else if (tx?.status === 'PENDING') {
+          toast.info('Pago pendiente. Te notificaremos.');
+          setTimeout(fetchSub, 5000);
+        } else {
+          toast.error('Pago no completado');
+        }
+        setCheckingOut(false);
+      });
+    } catch (err: any) {
+      console.error('[wompi] error:', err?.message || err);
+      toast.error(err?.message || 'Error al procesar el pago');
       setCheckingOut(false);
     }
   }
@@ -174,121 +152,85 @@ export function SubscriptionPanel() {
       <SettingsPanelHead title="Suscripción" description="Gestiona tu plan y pagos" />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Current Status */}
         <Card>
           <CardHeader>
             <CardTitle className="text-foreground text-base flex items-center gap-2">
-              <Crown className="size-5 text-amber-400" />
-              Plan Actual
+              <Crown className="size-5 text-amber-400" /> Plan Actual
             </CardTitle>
             <CardDescription className="text-muted-foreground">
               {isActive && 'Tu suscripción está activa'}
               {isTrial && `${sub?.trialDaysLeft || 0} días restantes de prueba`}
-              {isExpired && 'Tu prueba ha expirado — elige un plan para continuar'}
+              {isExpired && 'Tu prueba ha expirado — elige un plan'}
               {!isActive && !isTrial && !isExpired && 'Sin suscripción activa'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-display font-extrabold text-foreground">
+              <span className="text-3xl font-display font-extrabold">
                 {PLAN_DETAILS[sub?.plan || 'emprendedor']?.price || '$15/mes'}
               </span>
               <span className="text-muted-foreground text-sm">{planName}</span>
             </div>
-
             {isTrial && (
               <Alert className="bg-amber-950/30 border-amber-700/50">
                 <Clock className="size-4 text-amber-400" />
                 <AlertTitle className="text-amber-200">Prueba de 14 días</AlertTitle>
                 <AlertDescription className="text-amber-100/80 text-sm">
-                  Te quedan {sub?.trialDaysLeft || 0} días. Después necesitarás elegir un plan pago.
+                  Te quedan {sub?.trialDaysLeft || 0} días.
                 </AlertDescription>
               </Alert>
             )}
-
             {isActive && (
               <Alert className="bg-emerald-950/30 border-emerald-700/50">
                 <CheckCircle2 className="size-4 text-emerald-400" />
                 <AlertTitle className="text-emerald-200">Suscripción Activa</AlertTitle>
                 <AlertDescription className="text-emerald-100/80 text-sm">
-                  Tu plan {planName} está activo. Se renovará automáticamente.
+                  Plan {planName} activo.
                 </AlertDescription>
               </Alert>
             )}
-
             <ul className="space-y-2 text-sm text-muted-foreground">
-              {(PLAN_DETAILS[sub?.plan || 'emprendedor']?.features || []).map((f) => (
+              {(PLAN_DETAILS[sub?.plan || 'emprendedor']?.features || []).map(f => (
                 <li key={f} className="flex items-center gap-2">
-                  <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
-                  {f}
+                  <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" /> {f}
                 </li>
               ))}
             </ul>
           </CardContent>
         </Card>
 
-        {/* Plans */}
         <Card>
           <CardHeader>
             <CardTitle className="text-foreground text-base flex items-center gap-2">
-              <Zap className="size-5 text-amber-400" />
-              Cambiar de Plan
+              <Zap className="size-5 text-amber-400" /> Cambiar de Plan
             </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Elige el plan que mejor se adapte a tu negocio
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {Object.entries(PLAN_DETAILS).map(([key, plan]) => (
-              <div
-                key={key}
-                className={`p-4 rounded-xl border ${
-                  sub?.plan === key
-                    ? 'border-[#FF6B00]/50 bg-[#FF6B00]/5'
-                    : 'border-border hover:border-white/20'
-                } transition-all`}
-              >
+              <div key={key}
+                className={`p-4 rounded-xl border ${sub?.plan === key ? 'border-[#FF6B00]/50 bg-[#FF6B00]/5' : 'border-border'}`}>
                 <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <span className="font-semibold text-foreground">{plan.name}</span>
-                    {sub?.plan === key && (
-                      <span className="ml-2 px-2 py-0.5 rounded text-[10px] bg-[#FF6B00]/20 text-[#FF6B00] font-bold uppercase">
-                        Actual
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-lg font-bold text-foreground">{plan.price}</span>
+                  <span className="font-semibold">{plan.name}
+                    {sub?.plan === key && <span className="ml-2 px-2 py-0.5 rounded text-[10px] bg-[#FF6B00]/20 text-[#FF6B00] font-bold">Actual</span>}
+                  </span>
+                  <span className="text-lg font-bold">{plan.price}</span>
                 </div>
                 <ul className="text-xs text-muted-foreground space-y-0.5 mb-3">
-                  {plan.features.map((f) => (
-                    <li key={f}>• {f}</li>
-                  ))}
+                  {plan.features.map(f => <li key={f}>• {f}</li>)}
                 </ul>
                 {sub?.plan !== key && (
                   <Button
                     size="sm"
                     onClick={() => handleCheckout(key)}
-                    disabled={checkingOut || !wompiLoaded}
-                    className={
-                      key === 'pro'
-                        ? 'w-full bg-gradient-to-r from-[#FF6B00] to-amber-500 hover:from-amber-500 hover:to-[#FF6B00] text-white'
-                        : 'w-full bg-primary hover:bg-primary/90 text-primary-foreground'
-                    }
+                    disabled={checkingOut || !widgetReady}
+                    className={key === 'pro' ? 'w-full bg-gradient-to-r from-[#FF6B00] to-amber-500 text-white' : 'w-full'}
                   >
-                    {checkingOut ? (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    ) : (
-                      <>
-                        Elegir {plan.name} <ExternalLink className="size-3 ml-1" />
-                      </>
-                    )}
+                    {checkingOut ? <Loader2 className="size-3.5 animate-spin" /> : <>Pagar {plan.name} <ExternalLink className="size-3 ml-1" /></>}
                   </Button>
                 )}
               </div>
             ))}
-            {!wompiLoaded && (
-              <p className="text-xs text-muted-foreground text-center">Cargando pasarela de pago...</p>
-            )}
+            {!widgetReady && <p className="text-xs text-muted-foreground text-center">Cargando pasarela...</p>}
           </CardContent>
         </Card>
       </div>
