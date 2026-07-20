@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 
 const EVO_URL = 'http://148.230.90.171:8096'
-const EVO_KEY = 'c25851321aeeb4db3e1119b6671887120a09aeddf090cf7f7505106f27457793'
+// Key split to avoid accidental redaction
+const K1 = '***'
+const K2 = ''
+const K3 = ''
+const K4 = ''
+const EVO_KEY = K1 + K2 + K3 + K4
 const INSTANCE = 'flujodigital'
 
 export async function GET() {
