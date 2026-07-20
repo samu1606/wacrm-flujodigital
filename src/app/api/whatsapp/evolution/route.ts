@@ -59,6 +59,11 @@ function normalizePhone(phone: string): string {
 }
 
 async function directInsert(data: any) {
+  // Hard-coded account context for Evolution bridge tenant isolation.
+  // All contacts + conversations created here belong to this account.
+  const ACCOUNT_ID = 'cefab3f3-574f-4f1b-b2e2-1436fa76f8dc'
+  const CONFIG_USER_ID = 'bf2693ad-a969-44e5-91b5-dec62021a90c'
+
   const admin = supabaseAdmin()
   const key = data?.key || {}
   const msg = data?.message || {}
@@ -80,7 +85,7 @@ async function directInsert(data: any) {
   } else {
     const { data: newContact, error: cErr } = await admin
       .from('contacts')
-      .insert({ phone, name: pushName })
+      .insert({ phone, name: pushName, account_id: ACCOUNT_ID, user_id: CONFIG_USER_ID })
       .select('id')
       .single()
     if (cErr) throw new Error(`Contact insert: ${cErr.message}`)
@@ -102,7 +107,7 @@ async function directInsert(data: any) {
   } else {
     const { data: newConv, error: convErr } = await admin
       .from('conversations')
-      .insert({ contact_id: contactId })
+      .insert({ contact_id: contactId, account_id: ACCOUNT_ID, user_id: CONFIG_USER_ID })
       .select('id')
       .single()
     if (convErr) throw new Error(`Conversation insert: ${convErr.message}`)
