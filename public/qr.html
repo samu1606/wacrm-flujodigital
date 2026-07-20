@@ -4,17 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>WhatsApp QR - FlujoDigital</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <style>
 *{margin:0;padding:0}
 body{background:#111;display:flex;justify-content:center;align-items:center;min-height:100vh;flex-direction:column;padding:20px}
 h2{color:#fff;font-family:sans-serif;margin-bottom:24px;font-size:22px}
-img{background:#fff;padding:20px;border-radius:20px;box-shadow:0 0 30px rgba(0,200,0,.3);max-width:90vw}
+#qrcode{background:#fff;padding:20px;border-radius:20px;box-shadow:0 0 30px rgba(0,200,0,.3)}
 p{color:#aaa;font-family:sans-serif;margin-top:24px;font-size:15px}
+.pulse{animation:pulse 2s infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.refresh{color:#0f0;font-family:sans-serif;margin-top:8px;font-size:13px;cursor:pointer;text-decoration:underline;border:none;background:none}
 </style>
 </head>
 <body>
 <h2>📱 Escanea con WhatsApp</h2>
-<img src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=2%40udZcBRswKiag0y8xqaBPQApTwGlz0IEWqhuOrPIIplcCdp4JUHCJ4JdKXoYMXRjdP2sfqhvh6W2catsZBtTVnAQLrS%2FE7EDI%2FzQ%3D%2CgPIW8h3zybkFYSbQk545x2VetT8HnFZ5fmJOW839CA8%3D%2CmE9%2FUqy6svtuJW37O1R%2F8M%2BZOiL3WoHq%2FhhJdGFmWHU%3D%2CHIMvxtJQiYmFW%2BU57Gd1GF98bryxhVJ1N3osuoUGHEI%3D" width="400" height="400" alt="QR"/>
+<div id="qrcode"></div>
 <p>WhatsApp → Dispositivos Vinculados</p>
+<button class="refresh" onclick="location.reload()">🔄 Refrescar QR</button>
+<script>
+new QRCode(document.getElementById("qrcode"), {
+  text: "2@t7V1dRM9s3rwIPxCS0l3sdWG1jETDElQONataTP4R4YJ0rYI1BlV/AF7hmJtO7hYrX95Iwme/0i4xoKeJFOxmlV9WSRkVfi+4Ao=,gPIW8h3zybkFYSbQk545x2VetT8HnFZ5fmJOW839CA8=,mE9/Uqy6svtuJW37O1R/8M+ZOiL3WoHq/hhJdGFmWHU=,HIMvxtJQiYmFW+U57Gd1GF98bryxhVJ1N3osuoUGHEI=",
+  width: 330, height: 330,
+  colorDark: "#000000", colorLight: "#ffffff"
+});
+</script>
 </body>
 </html>
