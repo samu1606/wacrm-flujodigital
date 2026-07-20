@@ -131,6 +131,15 @@ const nextConfig: NextConfig = {
    * they apply to every response regardless of which cache rule
    * matched.
    */
+  async rewrites() {
+    return [
+      {
+        source: "/wasapea/:path*",
+        destination: "http://148.230.90.171:8097/:path*",
+      },
+    ];
+  },
+
   async headers() {
     return [
       {
