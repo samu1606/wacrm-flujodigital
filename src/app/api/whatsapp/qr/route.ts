@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 const EVO_URL = process.env.EVOLUTION_API_URL || 'http://148.230.90.171:8096'
-const EVO_KEY = proces…_KEY || ''
+const EVO_KEY = process.env.EVOLUTION_API_KEY || ''
 const INSTANCE = process.env.EVOLUTION_INSTANCE || 'flujodigital'
 
 export async function GET() {
