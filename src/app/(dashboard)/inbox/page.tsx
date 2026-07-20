@@ -195,6 +195,13 @@ function InboxPageInner() {
         .eq("user_id", user.id)
         .maybeSingle();
       const accountId = profile?.account_id as string | undefined;
+
+      // Evolution API mode: treat WhatsApp as always connected
+      if (process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE) {
+        setWhatsappConnected(true);
+        return;
+      }
+
       if (!accountId) {
         setWhatsappConnected(false);
         return;
