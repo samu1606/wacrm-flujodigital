@@ -175,6 +175,41 @@ export async function POST(request: Request) {
 
       const accessToken = decrypt(config.access_token)
 
+      // ── Detect token integrity *before* calling Meta ─────────────
+      // If the decrypted token looks empty / garbled / expired, or if
+      // the entire account is running on Evolution (no Meta), save the
+      // template locally as DRAFT so it stays usable for Evo broadcasts
+      // and the user isn't blocked by a broken Meta integration.
+      const isEvolution = process.env.WHATSAPP_PROVIDER === 'evolution'
+      if (isEvolution) {
+        // Evolution mode — no Meta submission, local-only save.
+        const { data: row } = await upsertTemplateRow(
+          supabase,
+          buildUpsertRow(accountId, user.id, payload, {
+            status: 'DRAFT',
+            metaTemplateId: null,
+            submissionError: null,
+          }),
+        )
+        return NextResponse.json({
+          success: true,
+          template: row,
+          local_only: true,
+          message:
+            'Plantilla guardada localmente (modo Evolution). Puedes usarla en difusiones rápidas.',
+        })
+      }
+
+      if (!accessToken || accessToken.length < 10) {
+        return NextResponse.json(
+          {
+            error:
+              'Token de acceso de Meta no configurado o inválido. Revisa las credenciales en Configuración → WhatsApp.',
+          },
+          { status: 400 },
+        )
+      }
+
       // Image headers need a Resumable-Upload handle (Meta rejects a
       // plain URL at creation). Derive it from header_media_url before
       // building the payload. Surfaces a 400 with an actionable message
@@ -209,14 +244,54 @@ export async function POST(request: Request) {
             submissionError: message,
           }),
         )
+
+        // Detect known Meta error classes and surface actionable
+        // Spanish messages instead of raw API noise.
+        const isAuthError =
+          /(OAuth|access.?token|token.*invalid|token.*expired|auth.*failed|parse.*token)/i.test(
+            message,
+          )
         const isRateLimit = /\b429\b/.test(message)
+        const isPermissionError =
+          /(#200|#10|permission|not.*authorized|scope)/i.test(message)
+
+        if (isAuthError) {
+          return NextResponse.json(
+            {
+              error:
+                'No se pudo enviar la plantilla a Meta: Token de acceso inválido o expirado. ' +
+                'Ve a Configuración → WhatsApp y re-conecta tu cuenta de Meta.',
+              meta_error: message,
+              saved_as_draft: true,
+            },
+            { status: 401 },
+          )
+        }
+        if (isPermissionError) {
+          return NextResponse.json(
+            {
+              error:
+                'Meta rechazó la plantilla por falta de permisos. ' +
+                'Asegúrate de que tu app de Meta tenga los scopes whatsapp_business_management y business_management.',
+              meta_error: message,
+              saved_as_draft: true,
+            },
+            { status: 403 },
+          )
+        }
+        if (isRateLimit) {
+          return NextResponse.json(
+            {
+              error:
+                'Límite de Meta alcanzado (100 plantillas por hora). Inténtalo de nuevo más tarde.',
+            },
+            { status: 429 },
+          )
+        }
+
         return NextResponse.json(
-          {
-            error: isRateLimit
-              ? 'Meta rate limit hit (100 template creates per hour). Try again later.'
-              : message,
-          },
-          { status: isRateLimit ? 429 : 502 },
+          { error: message },
+          { status: 502 },
         )
       }
     }

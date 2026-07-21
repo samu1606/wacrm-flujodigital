@@ -298,22 +298,45 @@ export function CreateTemplateDialog({
         body: JSON.stringify(buildSubmitPayload()),
       });
       const data = await res.json();
+
       if (!res.ok) {
-        throw new Error(
-          data?.error || `Submit failed (HTTP ${res.status})`,
-        );
+        // The API route now returns Spanish error messages for known
+        // failure classes (auth, permissions, rate-limit). Show them
+        // verbatim — they're already user-friendly.
+        const friendlyError =
+          data?.error || `Error del servidor (${res.status})`;
+
+        // If the template was saved as DRAFT despite the Meta failure,
+        // let the user know it's still usable locally.
+        if (data?.saved_as_draft) {
+          toast.warning(
+            `${friendlyError}\n\nLa plantilla se guardó localmente como borrador.`,
+          );
+          onSuccess?.();
+          onOpenChange(false);
+          return;
+        }
+
+        throw new Error(friendlyError);
       }
-      toast.success(
-        data.dry_run
-          ? "Template saved locally (dry-run mode)."
-          : "Template submitted for approval.",
-      );
+
+      // ── Success paths ──────────────────────────────────────────
+      if (data.local_only) {
+        // Evolution mode — saved locally, usable in quick broadcasts.
+        toast.success(data.message || "Plantilla guardada localmente.");
+      } else if (data.dry_run) {
+        toast.success("Plantilla guardada localmente (modo dry-run).");
+      } else {
+        toast.success("Plantilla enviada a Meta para aprobación.");
+      }
       onSuccess?.();
       onOpenChange(false);
     } catch (err) {
       console.error("Submit error:", err);
       toast.error(
-        err instanceof Error ? err.message : "Failed to create template.",
+        err instanceof Error
+          ? err.message
+          : "Error al crear la plantilla.",
       );
     } finally {
       setSubmitting(false);
