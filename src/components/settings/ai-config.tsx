@@ -41,11 +41,17 @@ const HANDOFF_QUEUE = '__queue__';
 const PROVIDER_LABEL: Record<AiProvider, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic (Claude)',
+  deepseek: 'DeepSeek ($0.27/M tokens)',
+  groq: 'Groq (free tier)',
+  openrouter: 'OpenRouter (multi-model)',
 };
 
 const KEY_PLACEHOLDER: Record<AiProvider, string> = {
-  openai: 'sk-...',
+  openai: 'sk-proj-...',
   anthropic: 'sk-ant-...',
+  deepseek: 'sk-...',
+  groq: 'gsk_...',
+  openrouter: 'sk-or-...',
 };
 
 export function AiConfig() {
@@ -129,8 +135,7 @@ export function AiConfig() {
   const handleProviderChange = (next: AiProvider) => {
     setProvider(next);
     const isDefaultModel =
-      model === AI_PROVIDER_DEFAULT_MODEL.openai ||
-      model === AI_PROVIDER_DEFAULT_MODEL.anthropic ||
+      Object.values(AI_PROVIDER_DEFAULT_MODEL).includes(model) ||
       model.trim() === '';
     if (isDefaultModel) setModel(AI_PROVIDER_DEFAULT_MODEL[next]);
   };
@@ -277,10 +282,9 @@ export function AiConfig() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="openai">{PROVIDER_LABEL.openai}</SelectItem>
-                    <SelectItem value="anthropic">
-                      {PROVIDER_LABEL.anthropic}
-                    </SelectItem>
+                    {Object.entries(PROVIDER_LABEL).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

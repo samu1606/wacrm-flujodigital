@@ -9,6 +9,14 @@ import { HANDOFF_SENTINEL, aiRequestTimeoutMs } from './defaults'
 import { generateOpenAi } from './providers/openai'
 import { generateAnthropic } from './providers/anthropic'
 
+/** Base URLs for OpenAI-compatible providers */
+const PROVIDER_BASE_URL: Partial<Record<AiConfig['provider'], string>> = {
+  openai: 'https://api.openai.com/v1/chat/completions',
+  deepseek: 'https://api.deepseek.com/v1/chat/completions',
+  groq: 'https://api.groq.com/openai/v1/chat/completions',
+  openrouter: 'https://openrouter.ai/api/v1/chat/completions',
+}
+
 export interface GenerateArgs {
   config: AiConfig
   /** Fully-built system prompt (see `buildSystemPrompt`). */
@@ -36,7 +44,13 @@ export async function generateReply(args: GenerateArgs): Promise<GenerateResult>
   let result: { text: string; usage: AiUsage | null }
   switch (config.provider) {
     case 'openai':
-      result = await generateOpenAi(providerArgs)
+    case 'deepseek':
+    case 'groq':
+    case 'openrouter':
+      result = await generateOpenAi({
+        ...providerArgs,
+        baseUrl: PROVIDER_BASE_URL[config.provider],
+      })
       break
     case 'anthropic':
       result = await generateAnthropic(providerArgs)

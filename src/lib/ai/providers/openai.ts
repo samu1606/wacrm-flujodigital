@@ -20,16 +20,18 @@ interface OpenAiResponse {
 }
 
 /**
- * Call OpenAI's Chat Completions endpoint with the caller's own key.
- * Returns the raw assistant text + token usage (handoff parsing happens
- * in `generateReply`).
+ * Call an OpenAI-compatible Chat Completions endpoint with the caller's
+ * own key. Works with any provider that exposes an OpenAI-compatible API
+ * (OpenAI, DeepSeek, Groq, OpenRouter, etc.) — just pass the right baseUrl.
  */
-export async function generateOpenAi(args: ProviderArgs): Promise<ProviderResult> {
-  const { apiKey, model, systemPrompt, messages, timeoutMs } = args
+export async function generateOpenAi(args: ProviderArgs & { baseUrl?: string }): Promise<ProviderResult> {
+  const { apiKey, model, systemPrompt, messages, timeoutMs, baseUrl } = args
+
+  const url = baseUrl || OPENAI_URL
 
   let res: Response
   try {
-    res = await fetch(OPENAI_URL, {
+    res = await fetch(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -50,13 +52,13 @@ export async function generateOpenAi(args: ProviderArgs): Promise<ProviderResult
   }
 
   if (!res.ok) {
-    throw await providerHttpError('OpenAI', res)
+    throw await providerHttpError('AI provider', res)
   }
 
   const data = (await res.json().catch(() => null)) as OpenAiResponse | null
   const text = data?.choices?.[0]?.message?.content
   if (!text || typeof text !== 'string' || !text.trim()) {
-    throw new AiError('OpenAI returned an empty response.', {
+    throw new AiError('AI provider returned an empty response.', {
       code: 'empty_response',
     })
   }
