@@ -172,13 +172,21 @@ async function handleMessageEdit(
     .from('messages')
     .update({
       content_text: newText,
-      metadata: {
-        edited: true,
-        original_text: oldText,
-        edited_at: new Date().toISOString(),
-      },
     })
     .eq('message_id', originalMsgId)
+
+  // Try to set metadata if column exists
+  if (!updErr) {
+    try {
+      await admin.from('messages').update({
+        metadata: {
+          edited: true,
+          original_text: oldText,
+          edited_at: new Date().toISOString(),
+        }
+      }).eq('message_id', originalMsgId)
+    } catch { /* metadata column may not exist yet */ }
+  }
 
   if (updErr) {
     console.error(`[evo] ✏️ Edit update failed:`, updErr.message)
@@ -399,7 +407,7 @@ async function processMessage(
     return NextResponse.json({ status: 'skipped', reason: 'empty_content' })
   }
 
-  // Insert message
+  // Insert message — metadata is stored separately in case column doesn't exist yet (migration 018)
   const { data: newMsg, error: msgErr } = await admin
     .from('messages')
     .insert({
@@ -410,7 +418,6 @@ async function processMessage(
       media_url: mediaUrl,
       message_id: msgId,
       status: 'delivered',
-      metadata,
     })
     .select('id')
     .single()
@@ -430,6 +437,13 @@ async function processMessage(
       updated_at: new Date().toISOString(),
     })
     .eq('id', convId)
+
+  // Try to store metadata (silently fails if column doesn't exist yet)
+  if (Object.keys(metadata).length > 0 && newMsg?.id) {
+    try {
+      await admin.from('messages').update({ metadata }).eq('id', newMsg.id)
+    } catch { /* metadata column may not exist yet */ }
+  }
 
   // ================================================================
   // For media messages: fire-and-forget fetch base64 from Evolution
