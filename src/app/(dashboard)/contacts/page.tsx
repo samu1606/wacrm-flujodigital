@@ -405,18 +405,18 @@ export default function ContactsPage() {
               render={
                 <Button
                   variant="outline"
-                  className="border-border text-muted-foreground hover:bg-muted shrink-0"
-                />
+                  className="border-border text-muted-foreground hover:bg-muted shrink-0 gap-1.5"
+                >
+                  <Filter className="size-4" />
+                  {t('filterByTags')}
+                  {selectedTagIds.length > 0 && (
+                    <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+                      {selectedTagIds.length}
+                    </span>
+                  )}
+                </Button>
               }
-            >
-              <Filter className="size-4" />
-              {t('filterByTags')}
-              {selectedTagIds.length > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
-                  {selectedTagIds.length}
-                </span>
-              )}
-            </PopoverTrigger>
+            />
             <PopoverContent align="start" className="w-64 p-0">
               <div className="flex items-center justify-between px-3 py-2 border-b border-border">
                 <span className="text-sm font-medium text-popover-foreground">
@@ -653,11 +653,11 @@ export default function ContactsPage() {
                             size="icon-sm"
                             className="text-muted-foreground hover:text-foreground"
                             onClick={(e) => e.stopPropagation()}
-                          />
+                          >
+                            <MoreHorizontal className="size-4" />
+                          </Button>
                         }
-                      >
-                        <MoreHorizontal className="size-4" />
-                      </DropdownMenuTrigger>
+                      />
                       <DropdownMenuContent
                         align="end"
                         className="bg-popover border-border"

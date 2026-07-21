@@ -193,12 +193,12 @@ export function Step4ScheduleSend({
               <Button
                 disabled={!name.trim() || isProcessing}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-              />
+              >
+                <Send className="h-4 w-4" />
+                {t('scheduleSend.sendNow')}
+              </Button>
             }
-          >
-            <Send className="h-4 w-4" />
-            {t('scheduleSend.sendNow')}
-          </DialogTrigger>
+          />
           <DialogContent className="border-border bg-popover sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-popover-foreground">Confirm Broadcast</DialogTitle>

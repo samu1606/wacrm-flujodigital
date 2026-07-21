@@ -368,25 +368,25 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                   <Link
                     href="/settings?tab=profile"
                     onClick={onClose}
-                    className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
-                  />
+                    className="flex items-center gap-2 text-popover-foreground focus:bg-accent focus:text-accent-foreground"
+                  >
+                    <User className="size-4" />
+                    {t("menuProfile")}
+                  </Link>
                 }
-              >
-                <User className="size-4" />
-                {t("menuProfile")}
-              </DropdownMenuItem>
+              />
               <DropdownMenuItem
                 render={
                   <Link
                     href="/settings?tab=whatsapp"
                     onClick={onClose}
-                    className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
-                  />
+                    className="flex items-center gap-2 text-popover-foreground focus:bg-accent focus:text-accent-foreground"
+                  >
+                    <Settings className="size-4" />
+                    {t("menuSettings")}
+                  </Link>
                 }
-              >
-                <Settings className="size-4" />
-                {t("menuSettings")}
-              </DropdownMenuItem>
+              />
               <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem
                 onClick={signOut}

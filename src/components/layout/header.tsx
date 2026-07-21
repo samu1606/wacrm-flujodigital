@@ -114,24 +114,24 @@ export function Header({ onOpenSidebar }: HeaderProps) {
             render={
               <Link
                 href="/settings?tab=profile"
-                className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
-              />
+                className="flex items-center gap-2 text-popover-foreground focus:bg-accent focus:text-accent-foreground"
+              >
+                <User className="size-4" />
+                {t("menuProfile")}
+              </Link>
             }
-          >
-            <User className="size-4" />
-            {t("menuProfile")}
-          </DropdownMenuItem>
+          />
           <DropdownMenuItem
             render={
               <Link
                 href="/settings?tab=whatsapp"
-                className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
-              />
+                className="flex items-center gap-2 text-popover-foreground focus:bg-accent focus:text-accent-foreground"
+              >
+                <SettingsIcon className="size-4" />
+                {t("menuSettings")}
+              </Link>
             }
-          >
-            <SettingsIcon className="size-4" />
-            {t("menuSettings")}
-          </DropdownMenuItem>
+          />
           <DropdownMenuSeparator className="bg-border" />
           <DropdownMenuItem
             onClick={signOut}
