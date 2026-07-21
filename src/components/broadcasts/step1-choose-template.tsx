@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MessageTemplate } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Loader2, FileText, ArrowRight } from 'lucide-react';
+import { Loader2, FileText, ArrowRight, Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import {
+  CreateTemplateDialog,
+} from '@/components/templates/create-template-dialog';
 
 const categoryColors: Record<string, string> = {
   Marketing: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
@@ -25,31 +28,34 @@ export function Step1ChooseTemplate({ selectedTemplate, onSelect, onNext, onBack
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const fetchTemplates = useCallback(async () => {
+    try {
+      setLoading(true);
+      const supabase = createClient();
+      // Only APPROVED templates can be sent via Meta — anything else
+      // would 400 at broadcast time. Hide them rather than letting
+      // the user pick a template that will fail.
+      const { data, error: fetchError } = await supabase
+        .from('message_templates')
+        .select('*')
+        .eq('status', 'APPROVED')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      setTemplates(data ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('chooseTemplate.errorLoad'));
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    async function fetchTemplates() {
-      try {
-        const supabase = createClient();
-        // Only APPROVED templates can be sent via Meta — anything else
-        // would 400 at broadcast time. Hide them rather than letting
-        // the user pick a template that will fail.
-        const { data, error: fetchError } = await supabase
-          .from('message_templates')
-          .select('*')
-          .eq('status', 'APPROVED')
-          .order('created_at', { ascending: false });
-
-        if (fetchError) throw fetchError;
-        setTemplates(data ?? []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t('chooseTemplate.errorLoad'));
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchTemplates();
-  }, []);
+  }, [fetchTemplates]);
 
   if (loading) {
     return (
@@ -69,11 +75,22 @@ export function Step1ChooseTemplate({ selectedTemplate, onSelect, onNext, onBack
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-foreground">{t('chooseTemplate.title')}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t('chooseTemplate.subtitle')}
-        </p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">{t('chooseTemplate.title')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t('chooseTemplate.subtitle')}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCreateOpen(true)}
+          className="shrink-0 gap-1.5 border-primary/30 text-primary hover:bg-primary/10 h-8 text-xs"
+        >
+          <Plus className="size-3.5" />
+          {t('chooseTemplate.createNew')}
+        </Button>
       </div>
 
       {templates.length === 0 ? (
@@ -81,6 +98,15 @@ export function Step1ChooseTemplate({ selectedTemplate, onSelect, onNext, onBack
           <FileText className="mb-2 h-8 w-8 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">{t('chooseTemplate.noTemplates')}</p>
           <p className="mt-1 text-xs text-muted-foreground">{t('chooseTemplate.createFirst')}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCreateOpen(true)}
+            className="mt-3 gap-1.5 border-primary/30 text-primary hover:bg-primary/10 h-8 text-xs"
+          >
+            <Plus className="size-3.5" />
+            {t('chooseTemplate.createNew')}
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -132,6 +158,17 @@ export function Step1ChooseTemplate({ selectedTemplate, onSelect, onNext, onBack
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Quick-create template dialog — lets the user create a new
+          template without leaving the broadcast wizard. On success,
+          refetch the template list so it's immediately selectable. */}
+      <CreateTemplateDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onSuccess={() => {
+          fetchTemplates();
+        }}
+      />
     </div>
   );
 }

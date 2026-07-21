@@ -681,6 +681,7 @@
         "subtitle": "Selecciona una plantilla aprobada para tu difusión.",
         "noTemplates": "Sin plantillas disponibles.",
         "createFirst": "Crea una plantilla en Configuración primero.",
+        "createNew": "Nueva Plantilla",
         "errorLoad": "Error al cargar plantillas"
       },
       "selectAudience": {

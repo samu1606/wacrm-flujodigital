@@ -681,6 +681,7 @@
         "subtitle": "Select an approved message template for your broadcast.",
         "noTemplates": "No templates available.",
         "createFirst": "Create a template in Settings first.",
+        "createNew": "New Template",
         "errorLoad": "Failed to load templates"
       },
       "selectAudience": {
