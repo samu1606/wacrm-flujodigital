@@ -91,42 +91,76 @@ export function QuickBroadcast({ open, onClose, onSent }: QuickBroadcastProps) {
     { label: string; value: string; message: string }[]
   >([]);
 
-  // Load contacts
+  // Load contacts, tags, and user templates when dialog opens.
+  // Templates are fetched via the server-side API (to bypass RLS) in
+  // a SEPARATE promise from contacts/tags — a template fetch failure
+  // must never block contact loading or crash the dialog.
   useEffect(() => {
     if (!open) return;
     setLoading(true);
     const supabase = createClient();
+
+    // Contacts + tags — these are critical; if they fail, we show the
+    // error and bail out (the dialog is useless without recipients).
     Promise.all([
       supabase.from('contacts').select('id, phone, name').order('created_at', { ascending: false }).limit(500),
       supabase.from('tags').select('id, name').order('name'),
-      // Fetch templates via our server-side API (not direct Supabase)
-      // so RLS / session issues don't silently return empty.
-      fetch('/api/whatsapp/templates').then(r => r.json()),
-    ]).then(([{ data: contactData, error: cErr }, { data: tagData }, tplResult]) => {
-      if (cErr) {
-        toast.error('Error al cargar contactos');
-        return;
-      }
-      setContacts(contactData || []);
-      setTags(tagData || []);
-      // Map API response into {label, value, message} shape for the dropdown.
-      const tplData = tplResult?.templates as
-        | { name: string; body_text: string }[]
-        | undefined;
-      if (tplData && tplData.length > 0) {
-        const mapped = tplData.map((t, i) => ({
-          label: `📝 ${t.name}`,
-          value: `user-${i}`,
-          message: t.body_text,
-        }));
+    ])
+      .then(([{ data: contactData, error: contactErr }, { data: tagData }]) => {
+        if (contactErr) {
+          toast.error('Error al cargar contactos');
+          return;
+        }
+        setContacts(contactData || []);
+        setTags(tagData || []);
+        if (contactData) {
+          setSelectedContactIds(new Set(contactData.map((c) => c.id)));
+        }
+      })
+      .finally(() => setLoading(false));
+
+    // Templates — fire-and-forget alongside contacts. Failure here is
+    // non-fatal: the dropdown simply falls back to the 7 predefined
+    // templates without any error toast.
+    (async () => {
+      try {
+        const res = await fetch('/api/whatsapp/templates');
+        if (!res.ok) {
+          console.warn(
+            '[quick-broadcast] template API returned',
+            res.status,
+          );
+          return;
+        }
+        const body: unknown = await res.json();
+        if (
+          !body ||
+          typeof body !== 'object' ||
+          !('templates' in body)
+        ) {
+          console.warn(
+            '[quick-broadcast] unexpected template API shape',
+            body,
+          );
+          return;
+        }
+        const raw = (body as { templates: unknown }).templates;
+        if (!Array.isArray(raw) || raw.length === 0) return;
+
+        const mapped = (raw as { name: string; body_text: string }[]).map(
+          (t, i) => ({
+            label: `📝 ${t.name ?? 'plantilla'}`,
+            value: `user-${i}`,
+            message: t.body_text ?? '',
+          }),
+        );
         setUserTemplates(mapped);
+      } catch (err) {
+        // Network / parse error — non-fatal, just log and fall back
+        // to the hardcoded defaults.
+        console.warn('[quick-broadcast] template fetch error:', err);
       }
-      // Auto-select all by default
-      if (contactData) {
-        setSelectedContactIds(new Set(contactData.map((c) => c.id)));
-      }
-      setLoading(false);
-    });
+    })();
   }, [open]);
 
   // Filter contacts by selected tags
