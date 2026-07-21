@@ -14,6 +14,7 @@ import {
   ImageOff,
   CornerDownLeft,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ReplyQuote } from "./reply-quote";
@@ -56,18 +57,83 @@ function MediaUnavailable({ label, t }: { label: string, t: ReturnType<typeof us
   );
 }
 
-function MediaImage({ url, alt }: { url: string; alt: string }) {
+function AudioPlayer({ url, messageId }: { url: string; messageId: string }) {
+  const [audioUrl, setAudioUrl] = useState<string | null>(url.startsWith("data:") || url.startsWith("blob:") ? url : null);
+  const [loading, setLoading] = useState(!audioUrl);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (audioUrl) return;
+    // Try to proxy through our media endpoint if direct URL fails
+    setLoading(true);
+    const audio = new Audio();
+    audio.preload = "metadata";
+    audio.onloadedmetadata = () => {
+      setAudioUrl(url);
+      setLoading(false);
+    };
+    audio.onerror = async () => {
+      // Fallback: proxy through our API
+      try {
+        const proxyUrl = `/api/whatsapp/media/proxy?id=${messageId}`;
+        const res = await fetch(proxyUrl);
+        if (res.ok) {
+          const blob = await res.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          setAudioUrl(blobUrl);
+          setLoading(false);
+          return;
+        }
+      } catch {}
+      setError(true);
+      setLoading(false);
+    };
+    audio.src = url;
+    return () => {
+      audio.src = "";
+    };
+  }, [url, messageId, audioUrl]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <span className="text-xs text-muted-foreground">Cargando audio...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <MediaUnavailable label="audio" t={undefined as any} />;
+  }
+
+  return (
+    <audio src={audioUrl ?? url} controls preload="metadata" className="max-w-60">
+      <p>Tu navegador no soporta audio HTML5.</p>
+    </audio>
+  );
+}
+
+function MediaImage({ url, alt, messageId }: { url: string; alt: string; messageId?: string }) {
   const [src, setSrc] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [retrying, setRetrying] = useState(false);
+  const [triedProxy, setTriedProxy] = useState(false);
 
-  const loadImage = useCallback(async () => {
-    if (!url) return;
+  const loadImage = useCallback(async (tryProxyFallback = false) => {
+    if (!url && !messageId) return;
+
+    const targetUrl = tryProxyFallback && messageId
+      ? `/api/whatsapp/media/proxy?id=${messageId}`
+      : url;
+
+    if (!targetUrl) return;
 
     // Proxy URLs need auth fetch to create blob URL
-    if (url.startsWith("/api/whatsapp/media/")) {
+    if (targetUrl.startsWith("/api/whatsapp/media/")) {
       try {
-        const res = await fetch(url);
+        const res = await fetch(targetUrl);
         if (!res.ok) throw new Error("Failed to load media");
         const blob = await res.blob();
         const blobUrl = URL.createObjectURL(blob);
@@ -76,12 +142,18 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
         setError(true);
       } finally {
         setLoading(false);
+        setRetrying(false);
       }
-    } else {
-      setSrc(url);
+    } else if (targetUrl.startsWith("data:")) {
+      setSrc(targetUrl);
       setLoading(false);
+      setRetrying(false);
+    } else {
+      setSrc(targetUrl);
+      setLoading(false);
+      setRetrying(false);
     }
-  }, [url]);
+  }, [url, messageId]);
 
   useEffect(() => {
     loadImage();
@@ -93,10 +165,47 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadImage]);
 
-  if (error) {
+  const handleRetry = useCallback(async () => {
+    setRetrying(true);
+    if (!triedProxy && messageId) {
+      setTriedProxy(true);
+      setError(false);
+      setLoading(true);
+      await loadImage(true);
+    } else {
+      // Retry with the original URL
+      setError(false);
+      setLoading(true);
+      await loadImage(false);
+    }
+  }, [triedProxy, messageId, loadImage]);
+
+  // Handle onError from the <img> tag — try proxy fallback first
+  const handleImageError = useCallback(async () => {
+    if (!triedProxy && messageId) {
+      setTriedProxy(true);
+      setError(false);
+      setLoading(true);
+      await loadImage(true);
+    } else {
+      setError(true);
+      setLoading(false);
+      setRetrying(false);
+    }
+  }, [triedProxy, messageId, loadImage]);
+
+  if (error || (retrying && triedProxy)) {
     return (
-      <div className="flex h-40 w-60 items-center justify-center rounded-lg bg-muted">
+      <div className="flex h-40 w-60 flex-col items-center justify-center gap-2 rounded-lg bg-muted">
         <ImageOff className="h-8 w-8 text-muted-foreground" />
+        <button
+          onClick={handleRetry}
+          disabled={retrying}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5", retrying && "animate-spin")} />
+          Reintentar carga
+        </button>
       </div>
     );
   }
@@ -114,7 +223,7 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
       src={src ?? ""}
       alt={alt}
       className="max-h-64 max-w-60 rounded-lg object-cover"
-      onError={() => setError(true)}
+      onError={handleImageError}
     />
   );
 }
@@ -132,7 +241,7 @@ function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof
       return (
         <div>
           {message.media_url ? (
-            <MediaImage url={message.media_url} alt="Shared image" />
+            <MediaImage url={message.media_url} alt="Shared image" messageId={message.id} />
           ) : (
             <MediaUnavailable label={t("photo")} t={t} />
           )}
@@ -168,7 +277,7 @@ function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof
       return (
         <div>
           {message.media_url ? (
-            <audio src={message.media_url} controls className="max-w-60" />
+            <AudioPlayer url={message.media_url} messageId={message.id} />
           ) : (
             <MediaUnavailable label={t("audio")} t={t} />
           )}

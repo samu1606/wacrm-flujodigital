@@ -19,6 +19,11 @@ interface SubInfo {
 }
 
 const PLAN_DETAILS: Record<string, { name: string; price: string; features: string[] }> = {
+  free: {
+    name: 'Gratuito / Prueba',
+    price: '$0/mes',
+    features: ['Prueba de 14 días', 'Funcionalidades básicas', 'Sin tarjeta requerida'],
+  },
   emprendedor: {
     name: 'Emprendedor',
     price: '$15/mes',
@@ -48,7 +53,7 @@ export function SubscriptionPanel() {
   const checkoutPlan = searchParams.get('checkout'); // Auto-trigger from landing page
   const autoTriggered = useRef(false);
   const [loading, setLoading] = useState(true);
-  const [checkingOut, setCheckingOut] = useState(false);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [sub, setSub] = useState<SubInfo | null>(null);
   const [widgetReady, setWidgetReady] = useState(false);
 
@@ -91,7 +96,7 @@ export function SubscriptionPanel() {
   }, [widgetReady]);
 
   async function handleCheckout(plan: string) {
-    setCheckingOut(true);
+    setLoadingPlan(plan);
     try {
       const res = await fetch('/api/wompi/checkout', {
         method: 'POST',
@@ -102,7 +107,6 @@ export function SubscriptionPanel() {
 
       if (!res.ok || data.error) {
         toast.error(data.error || 'Error al crear el pago');
-        setCheckingOut(false);
         return;
       }
 
@@ -110,14 +114,12 @@ export function SubscriptionPanel() {
       if (data.paymentLink) {
         toast.info('Redirigiendo a la pasarela de pago...');
         window.open(data.paymentLink, '_blank');
-        setCheckingOut(false);
         return;
       }
 
       // Widget mode
       if (!window.WidgetCheckout) {
         toast.error('Cargando pasarela de pago... intenta en 5 segundos');
-        setCheckingOut(false);
         return;
       }
 
@@ -142,12 +144,12 @@ export function SubscriptionPanel() {
         } else {
           toast.error('Pago no completado');
         }
-        setCheckingOut(false);
       });
     } catch (err: any) {
       console.error('[wompi] error:', err?.message || err);
       toast.error(err?.message || 'Error al procesar el pago');
-      setCheckingOut(false);
+    } finally {
+      setLoadingPlan(null);
     }
   }
 
@@ -162,10 +164,12 @@ export function SubscriptionPanel() {
     );
   }
 
-  const planName = PLAN_DETAILS[sub?.plan || 'emprendedor']?.name || 'Emprendedor';
+  const planKey = sub?.plan || 'free';
+  const planName = PLAN_DETAILS[planKey]?.name || 'Gratuito';
   const isActive = sub?.status === 'active';
   const isTrial = sub?.status === 'trial';
   const isExpired = sub?.status === 'expired';
+  const isFree = planKey === 'free' || !sub || sub?.status === 'no_subscription';
 
   return (
     <section>
@@ -187,11 +191,19 @@ export function SubscriptionPanel() {
           <CardContent className="space-y-4">
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-display font-extrabold">
-                {PLAN_DETAILS[sub?.plan || 'emprendedor']?.price || '$15/mes'}
+                {PLAN_DETAILS[planKey]?.price || '$0/mes'}
               </span>
               <span className="text-muted-foreground text-sm">{planName}</span>
             </div>
-            {isTrial && (
+            {isFree ? (
+              <Alert className="bg-blue-950/30 border-blue-700/50">
+                <Clock className="size-4 text-blue-400" />
+                <AlertTitle className="text-blue-200">Plan Gratuito</AlertTitle>
+                <AlertDescription className="text-blue-100/80 text-sm">
+                  Elige un plan de pago para desbloquear todas las funcionalidades.
+                </AlertDescription>
+              </Alert>
+            ) : isTrial && (
               <Alert className="bg-amber-950/30 border-amber-700/50">
                 <Clock className="size-4 text-amber-400" />
                 <AlertTitle className="text-amber-200">Prueba de 14 días</AlertTitle>
@@ -210,7 +222,7 @@ export function SubscriptionPanel() {
               </Alert>
             )}
             <ul className="space-y-2 text-sm text-muted-foreground">
-              {(PLAN_DETAILS[sub?.plan || 'emprendedor']?.features || []).map(f => (
+              {(PLAN_DETAILS[planKey]?.features || []).map(f => (
                 <li key={f} className="flex items-center gap-2">
                   <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" /> {f}
                 </li>
@@ -226,30 +238,32 @@ export function SubscriptionPanel() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {Object.entries(PLAN_DETAILS).map(([key, plan]) => (
+            {Object.entries(PLAN_DETAILS).map(([key, plan]) => {
+              const isCurrentPlan = planKey === key;
+              // Don't show free plan in upgrade list
+              if (key === 'free') return null;
+              return (
               <div key={key}
-                className={`p-4 rounded-xl border ${sub?.plan === key ? 'border-[#FF6B00]/50 bg-[#FF6B00]/5' : 'border-border'}`}>
+                className={`p-4 rounded-xl border ${isCurrentPlan ? 'border-[#FF6B00]/50 bg-[#FF6B00]/5' : 'border-border'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold">{plan.name}
-                    {sub?.plan === key && <span className="ml-2 px-2 py-0.5 rounded text-[10px] bg-[#FF6B00]/20 text-[#FF6B00] font-bold">Actual</span>}
+                    {isCurrentPlan && <span className="ml-2 px-2 py-0.5 rounded text-[10px] bg-[#FF6B00]/20 text-[#FF6B00] font-bold">Actual</span>}
                   </span>
                   <span className="text-lg font-bold">{plan.price}</span>
                 </div>
                 <ul className="text-xs text-muted-foreground space-y-0.5 mb-3">
                   {plan.features.map(f => <li key={f}>• {f}</li>)}
                 </ul>
-                {sub?.plan !== key && (
-                  <Button
-                    size="sm"
-                    onClick={() => handleCheckout(key)}
-                    disabled={checkingOut || !widgetReady}
-                    className={key === 'pro' ? 'w-full bg-gradient-to-r from-[#FF6B00] to-amber-500 text-white' : 'w-full'}
-                  >
-                    {checkingOut ? <Loader2 className="size-3.5 animate-spin" /> : <>Pagar {plan.name} <ExternalLink className="size-3 ml-1" /></>}
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  onClick={() => handleCheckout(key)}
+                  disabled={loadingPlan !== null || !widgetReady}
+                  className={key === 'pro' ? 'w-full bg-gradient-to-r from-[#FF6B00] to-amber-500 text-white' : 'w-full'}
+                >
+                  {loadingPlan === key ? <Loader2 className="size-3.5 animate-spin" /> : <>Pagar {plan.name} <ExternalLink className="size-3 ml-1" /></>}
+                </Button>
               </div>
-            ))}
+            )})}
             {!widgetReady && <p className="text-xs text-muted-foreground text-center">Cargando pasarela...</p>}
           </CardContent>
         </Card>

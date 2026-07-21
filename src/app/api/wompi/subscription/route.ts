@@ -10,7 +10,7 @@ export async function GET() {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ plan: 'free', status: 'no_subscription', trialDaysLeft: 0 });
     }
 
     const { data: profile } = await supabase
@@ -20,7 +20,7 @@ export async function GET() {
       .single();
 
     if (!profile?.account_id) {
-      return NextResponse.json({ plan: 'emprendedor', status: 'trial', trialDaysLeft: 0 });
+      return NextResponse.json({ plan: 'free', status: 'no_subscription', trialDaysLeft: 0 });
     }
 
     const { data: sub } = await supabase
@@ -30,7 +30,7 @@ export async function GET() {
       .maybeSingle();
 
     if (!sub) {
-      return NextResponse.json({ plan: 'emprendedor', status: 'no_subscription', trialDaysLeft: 0 });
+      return NextResponse.json({ plan: 'free', status: 'no_subscription', trialDaysLeft: 0 });
     }
 
     // Calculate trial days remaining

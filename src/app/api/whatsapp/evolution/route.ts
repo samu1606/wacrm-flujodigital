@@ -136,17 +136,21 @@ async function handleMessageEdit(
   phone: string,
 ) {
   const protocolMsg = msg?.protocolMessage
-  const editedMsg = protocolMsg?.editedMessage
+  const editedMsg = protocolMsg?.editedMessage || msg?.editedMessage || msg?.messageContextInfo?.editedMessage
 
   // Extract new text from various possible locations
   const newText = editedMsg?.conversation
     || editedMsg?.extendedTextMessage?.text
     || editedMsg?.message?.conversation
     || editedMsg?.message?.extendedTextMessage?.text
+    || msg?.message?.conversation
     || ''
 
-  // The original message ID being edited
-  const originalMsgId = protocolMsg?.key?.id || ''
+  // The original message ID being edited — try several locations
+  const originalMsgId = protocolMsg?.key?.id
+    || msg?.message?.protocolMessage?.key?.id
+    || msg?.messageContextInfo?.stanzaId
+    || ''
 
   console.log(`[evo] ✏️ MESSAGE_EDIT detected | originalId=${originalMsgId.slice(0,12)} | newText=${newText.slice(0,80)} | instance=${instanceName}`)
 
@@ -325,15 +329,20 @@ async function processMessage(
       mediaKey: msg.videoMessage.mediaKey,
       directPath: msg.videoMessage.directPath,
     }
-  } else if (msg.audioMessage) {
+  } else if (msg.audioMessage || msg.pttMessage) {
+    const audioMsg = msg.audioMessage || msg.pttMessage
     contentType = 'audio'
+    contentText = audioMsg.caption || ''
+    mediaUrl = audioMsg.url || null
     metadata.media = {
       type: 'audio',
-      url: msg.audioMessage.url,
-      mimetype: msg.audioMessage.mimetype || 'audio/ogg',
-      fileLength: msg.audioMessage.fileLength,
-      mediaKey: msg.audioMessage.mediaKey,
-      directPath: msg.audioMessage.directPath,
+      url: audioMsg.url,
+      mimetype: audioMsg.mimetype || 'audio/ogg; codecs=opus',
+      fileLength: audioMsg.fileLength,
+      mediaKey: audioMsg.mediaKey,
+      directPath: audioMsg.directPath,
+      seconds: audioMsg.seconds,
+      ptt: !!msg.pttMessage,
     }
   } else if (msg.documentMessage) {
     contentType = 'document'
@@ -398,6 +407,11 @@ async function processMessage(
     } else {
       contentText = '📩 View Once'
     }
+  // Handle edited messages arriving in alternative formats
+  } else if (msg.editedMessage || (msg.messageContextInfo && msg.messageContextInfo.editedMessage)) {
+    // Evolution sometimes sends edits as editedMessage at top level
+    // or nested inside messageContextInfo
+    return await handleMessageEdit(admin, msg, key, accountId, convId, instanceName, phone)
   } else {
     contentText = '[tipo: ' + Object.keys(msg).join(',') + ']'
     metadata.unknownType = Object.keys(msg)
@@ -449,7 +463,7 @@ async function processMessage(
   // For media messages: fire-and-forget fetch base64 from Evolution
   // to make media permanently available (WhatsApp CDN URLs expire)
   // ================================================================
-  if ((contentType === 'image' || contentType === 'video' || contentType === 'audio') && mediaUrl && newMsg?.id) {
+  if ((contentType === 'image' || contentType === 'video' || contentType === 'audio' || contentType === 'document') && mediaUrl && newMsg?.id) {
     fetchMediaBase64InBackground(newMsg.id, instanceName, rawBody)
   }
 
@@ -481,7 +495,9 @@ async function fetchMediaBase64InBackground(messageId: string, instanceName: str
     let mimetype = 'image/jpeg'
     if (msg.imageMessage) mimetype = msg.imageMessage.mimetype || 'image/jpeg'
     else if (msg.videoMessage) mimetype = msg.videoMessage.mimetype || 'video/mp4'
-    else if (msg.audioMessage) mimetype = msg.audioMessage.mimetype || 'audio/ogg'
+    else if (msg.audioMessage || msg.pttMessage) {
+      mimetype = (msg.audioMessage || msg.pttMessage).mimetype || 'audio/ogg; codecs=opus'
+    }
     else {
       console.warn(`[evo] 📎 Unknown media type for msg ${messageId.slice(0,8)}`)
       return

@@ -1465,7 +1465,8 @@
       "fields": "Campos y etiquetas",
       "deals": "Negocios y moneda",
       "members": "Equipo",
-      "api": "API keys"
+      "api": "API keys",
+      "subscription": "Suscripción"
     },
     "groups": {
       "account": "Cuenta",
