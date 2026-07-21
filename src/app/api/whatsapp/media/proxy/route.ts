@@ -23,6 +23,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Message not found' }, { status: 404 })
   }
 
+  // If already a Supabase Storage URL (new format), redirect directly
+  if (msg.media_url?.includes('/storage/v1/object/public/')) {
+    return NextResponse.redirect(msg.media_url)
+  }
+
   // If media_url is already a data: URL (base64), redirect to it
   if (msg.media_url?.startsWith('data:')) {
     return NextResponse.redirect(msg.media_url)

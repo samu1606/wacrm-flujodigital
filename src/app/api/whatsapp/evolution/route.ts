@@ -464,7 +464,7 @@ async function processMessage(
   // to make media permanently available (WhatsApp CDN URLs expire)
   // ================================================================
   if ((contentType === 'image' || contentType === 'video' || contentType === 'audio' || contentType === 'document') && mediaUrl && newMsg?.id) {
-    fetchMediaBase64InBackground(newMsg.id, instanceName, rawBody)
+    fetchAndStoreInStorage(newMsg.id, instanceName, rawBody, accountId)
   }
 
   return NextResponse.json({
@@ -479,10 +479,16 @@ async function processMessage(
 }
 
 // ================================================================
-// Background media download: fetch base64 from Evolution API
-// and update the stored message with a persistent data URL
+// Background media download: fetch base64 from Evolution API,
+// upload to Supabase Storage, and store the public URL.
+// WhatsApp CDN URLs expire — Supabase Storage is permanent.
 // ================================================================
-async function fetchMediaBase64InBackground(messageId: string, instanceName: string, rawPayload: any) {
+async function fetchAndStoreInStorage(
+  messageId: string, 
+  instanceName: string, 
+  rawPayload: any,
+  accountId: string,
+) {
   try {
     if (!EVO_URL || !EVO_KEY || !instanceName) {
       console.warn(`[evo] 📎 Cannot fetch media — missing EVO_URL/EVO_KEY or instance`)
@@ -491,19 +497,30 @@ async function fetchMediaBase64InBackground(messageId: string, instanceName: str
 
     const msg = rawPayload?.data?.message || rawPayload?.message || {}
 
-    // Determine mimetype from message type
+    // Determine mimetype and file extension
     let mimetype = 'image/jpeg'
-    if (msg.imageMessage) mimetype = msg.imageMessage.mimetype || 'image/jpeg'
-    else if (msg.videoMessage) mimetype = msg.videoMessage.mimetype || 'video/mp4'
-    else if (msg.audioMessage || msg.pttMessage) {
+    let ext = 'jpg'
+    if (msg.imageMessage) {
+      mimetype = msg.imageMessage.mimetype || 'image/jpeg'
+      if (mimetype.includes('png')) ext = 'png'
+      else if (mimetype.includes('webp')) ext = 'webp'
+      else ext = 'jpg'
+    } else if (msg.videoMessage) {
+      mimetype = msg.videoMessage.mimetype || 'video/mp4'
+      ext = 'mp4'
+    } else if (msg.audioMessage || msg.pttMessage) {
       mimetype = (msg.audioMessage || msg.pttMessage).mimetype || 'audio/ogg; codecs=opus'
-    }
-    else {
+      ext = 'ogg'
+    } else if (msg.documentMessage) {
+      mimetype = msg.documentMessage.mimetype || 'application/octet-stream'
+      const fn = msg.documentMessage.fileName || ''
+      ext = fn.split('.').pop() || 'bin'
+    } else {
       console.warn(`[evo] 📎 Unknown media type for msg ${messageId.slice(0,8)}`)
       return
     }
 
-    console.log(`[evo] 📎 Fetching base64 media for msg ${messageId.slice(0,8)} from ${instanceName}`)
+    console.log(`[evo] 📎 Fetching media for msg ${messageId.slice(0,8)} from ${instanceName}`)
 
     const resp = await fetch(`${EVO_URL}/chat/getBase64FromMediaMessage/${instanceName}`, {
       method: 'POST',
@@ -532,36 +549,54 @@ async function fetchMediaBase64InBackground(messageId: string, instanceName: str
       return
     }
 
-    // Build data URL
-    const dataUrl = `data:${mimetype};base64,${base64}`
+    // Convert base64 to Buffer
+    const buffer = Buffer.from(base64, 'base64')
+    const sizeKB = Math.round(buffer.length / 1024)
 
-    // Update the message with the persistent data URL
-    const admin = supabaseAdmin()
-    
-    // Get existing metadata to preserve
-    const { data: existingMsg } = await admin
-      .from('messages')
-      .select('metadata')
-      .eq('id', messageId)
-      .single()
-    
-    const mergedMetadata = { ...(existingMsg?.metadata || {}), base64_fetched: true }
-    
-    const { error } = await admin
+    // Upload to Supabase Storage
+    const supabase = supabaseAdmin()
+    const storagePath = `account-${accountId}/${messageId}.${ext}`
+
+    const { error: uploadErr } = await supabase.storage
+      .from('chat-media')
+      .upload(storagePath, buffer, {
+        contentType: mimetype,
+        cacheControl: '31536000', // 1 year
+        upsert: true,
+      })
+
+    if (uploadErr) {
+      console.error(`[evo] 📎 Storage upload failed for msg ${messageId.slice(0,8)}:`, uploadErr.message)
+      
+      // FALLBACK: if storage fails, save the data URL directly so the message isn't lost
+      const dataUrl = `data:${mimetype};base64,${base64}`
+      await supabase
+        .from('messages')
+        .update({ media_url: dataUrl, metadata: { storage_backend: 'base64' } })
+        .eq('id', messageId)
+      return
+    }
+
+    // Build public URL
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/chat-media/${storagePath}`
+
+    // Update the message with the public URL
+    const { error: updateErr } = await supabase
       .from('messages')
       .update({
-        media_url: dataUrl,
-        metadata: mergedMetadata,
+        media_url: publicUrl,
+        metadata: { storage_backend: 'supabase', stored: true },
       })
       .eq('id', messageId)
 
-    if (error) {
-      console.error(`[evo] 📎 Failed to update media_url for msg ${messageId.slice(0,8)}:`, error.message)
+    if (updateErr) {
+      console.error(`[evo] 📎 DB update failed for msg ${messageId.slice(0,8)}:`, updateErr.message)
     } else {
-      console.log(`[evo] 📎 Media base64 stored for msg ${messageId.slice(0,8)} (${Math.round(base64.length/1024)}KB)`)
+      console.log(`[evo] 📎 Media stored in Supabase Storage: ${publicUrl} (${sizeKB}KB)`)
     }
   } catch (err: any) {
-    console.error(`[evo] 📎 Media fetch error for msg ${messageId.slice(0,8)}:`, err.message)
+    console.error(`[evo] 📎 Media storage error for msg ${messageId.slice(0,8)}:`, err.message)
   }
 }
 

@@ -222,6 +222,7 @@ function MediaImage({ url, alt, messageId }: { url: string; alt: string; message
     <img
       src={src ?? ""}
       alt={alt}
+      loading="lazy"
       className="max-h-64 max-w-60 rounded-lg object-cover"
       onError={handleImageError}
     />
