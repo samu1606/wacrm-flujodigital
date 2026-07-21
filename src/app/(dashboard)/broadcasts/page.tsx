@@ -68,7 +68,25 @@ export default function BroadcastsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Used to kick off polling only while something is actively sending.
+  // Component-level error boundary: QuickBroadcast has its own data
+  // fetching and rendering path. If it crashes, the broadcast list
+  // stays intact — we just hide the modal and log the error.
+  const [quickError, setQuickError] = useState(false);
+
+  useEffect(() => {
+    if (quickError) {
+      console.error(
+        '[broadcasts] QuickBroadcast error boundary caught a crash — hiding modal.',
+      );
+      setShowQuick(false);
+      setQuickError(false);
+    }
+  }, [quickError]);
+
+  // Defensive alias — broadcasts starts as [] via useState, but this
+  // guards against a malformed DB response.
+  const safe = Array.isArray(broadcasts) ? broadcasts : [];
+
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   async function fetchBroadcasts() {
@@ -93,8 +111,8 @@ export default function BroadcastsPage() {
   }, []);
 
   const anySending = useMemo(
-    () => broadcasts.some((b) => b.status === 'sending'),
-    [broadcasts],
+    () => safe.some((b) => b?.status === 'sending'),
+    [safe],
   );
 
   useEffect(() => {
@@ -152,14 +170,32 @@ export default function BroadcastsPage() {
     );
   }
 
+  // Defensive: broadcasts is always an array (initialized as []),
+  // but this guards against a malformed DB response.
+
   return (
     <div className="space-y-6">
-      {/* Quick Broadcast Dialog */}
-      <QuickBroadcast
-        open={showQuick}
-        onClose={() => setShowQuick(false)}
-        onSent={() => fetchBroadcasts()}
-      />
+      {/* Quick Broadcast Dialog — wrapped defensively so a crash in
+          the template picker / dialog doesn't blow up the entire page. */}
+      {(() => {
+        try {
+          return (
+            <QuickBroadcast
+              open={showQuick}
+              onClose={() => setShowQuick(false)}
+              onSent={() => fetchBroadcasts()}
+            />
+          );
+        } catch (err) {
+          console.error(
+            '[broadcasts] QuickBroadcast render crashed:',
+            err,
+          );
+          // Trigger the cleanup effect that hides the modal
+          setTimeout(() => setQuickError(true), 0);
+          return null;
+        }
+      })()}
 
       {/* Top indeterminate progress bar: only visible while a broadcast
           is mid-send. Pure CSS animation so no extra deps. */}
@@ -218,7 +254,7 @@ export default function BroadcastsPage() {
         </div>
       </div>
 
-      {broadcasts.length === 0 ? (
+      {safe.length === 0 ? (
         <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-border bg-card">
           <Radio className="mb-3 h-10 w-10 text-muted-foreground" />
           <p className="text-sm font-medium text-foreground">{t('noBroadcastsYet')}</p>
@@ -261,52 +297,54 @@ export default function BroadcastsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {broadcasts.map((broadcast) => {
-                const status = getBroadcastStatus(broadcast.status);
+              {safe.map((broadcast) => {
+                const status = getBroadcastStatus(broadcast?.status ?? 'draft');
                 return (
                   <TableRow
-                    key={broadcast.id}
+                    key={broadcast?.id}
                     className="cursor-pointer border-border hover:bg-muted/50"
-                    onClick={() => router.push(`/broadcasts/${broadcast.id}`)}
+                    onClick={() => router.push(`/broadcasts/${broadcast?.id}`)}
                   >
                     <TableCell className="font-medium text-foreground">
-                      {broadcast.name}
+                      {broadcast?.name ?? '—'}
                     </TableCell>
                     <TableCell className="hidden text-muted-foreground md:table-cell">
-                      {broadcast.template_name}
+                      {broadcast?.template_name ?? '—'}
                     </TableCell>
                     <TableCell className="hidden text-right text-muted-foreground tabular-nums sm:table-cell">
-                      {broadcast.total_recipients}
+                      {broadcast?.total_recipients?.toLocaleString?.() ?? 0}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
                       <RateCell
-                        value={broadcast.delivered_count}
-                        total={broadcast.total_recipients}
+                        value={broadcast?.delivered_count ?? 0}
+                        total={broadcast?.total_recipients ?? 0}
                         color="bg-primary"
                       />
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
                       <RateCell
-                        value={broadcast.read_count}
-                        total={broadcast.total_recipients}
+                        value={broadcast?.read_count ?? 0}
+                        total={broadcast?.total_recipients ?? 0}
                         color="bg-blue-500"
                       />
                     </TableCell>
                     <TableCell>
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${status.classes}`}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${status?.classes ?? ''}`}
                       >
-                        {status.pulse && (
+                        {status?.pulse && (
                           <span className="relative flex h-1.5 w-1.5">
                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
                             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-yellow-400" />
                           </span>
                         )}
-                        {tStatus(status.label)}
+                        {tStatus(status?.label ?? 'draft')}
                       </span>
                     </TableCell>
                     <TableCell className="hidden text-muted-foreground sm:table-cell">
-                      {new Date(broadcast.created_at).toLocaleDateString()}
+                      {broadcast?.created_at
+                        ? new Date(broadcast.created_at).toLocaleDateString()
+                        : '—'}
                     </TableCell>
                   </TableRow>
                 );

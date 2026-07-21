@@ -266,10 +266,10 @@ export default function BroadcastDetailPage() {
   const status = getBroadcastStatus(broadcast.status);
 
   const funnelSteps: FunnelStep[] = [
-    { label: t('stats.sent'), value: broadcast.sent_count, color: 'bg-primary' },
-    { label: t('stats.delivered'), value: broadcast.delivered_count, color: 'bg-teal-500' },
-    { label: t('stats.read'), value: broadcast.read_count, color: 'bg-blue-500' },
-    { label: t('stats.replied'), value: broadcast.replied_count, color: 'bg-indigo-500' },
+    { label: t('stats.sent'), value: broadcast?.sent_count ?? 0, color: 'bg-primary' },
+    { label: t('stats.delivered'), value: broadcast?.delivered_count ?? 0, color: 'bg-teal-500' },
+    { label: t('stats.read'), value: broadcast?.read_count ?? 0, color: 'bg-blue-500' },
+    { label: t('stats.replied'), value: broadcast?.replied_count ?? 0, color: 'bg-indigo-500' },
   ];
 
   return (
@@ -295,10 +295,10 @@ export default function BroadcastDetailPage() {
               </span>
             </div>
             <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
-              <span>{t('template', { name: broadcast.template_name })}</span>
+              <span>{t('template', { name: broadcast?.template_name ?? '—' })}</span>
               <span>-</span>
               <span>
-                {t('createdAt', { date: new Date(broadcast.created_at).toLocaleDateString() })}
+                {t('createdAt', { date: broadcast?.created_at ? new Date(broadcast.created_at).toLocaleDateString() : '—' })}
               </span>
             </div>
           </div>
@@ -333,10 +333,10 @@ export default function BroadcastDetailPage() {
           <Button
             variant="outline"
             size="sm"
-            disabled={broadcast.status === 'sending'}
+            disabled={broadcast?.status === 'sending'}
             onClick={() => setConfirmDelete(true)}
             title={
-              broadcast.status === 'sending'
+              broadcast?.status === 'sending'
                 ? t('cannotDeleteSending')
                 : t('deleteHover')
             }
@@ -352,43 +352,43 @@ export default function BroadcastDetailPage() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard
           label={t('stats.totalRecipients')}
-          value={broadcast.total_recipients}
-          total={broadcast.total_recipients}
+          value={broadcast?.total_recipients ?? 0}
+          total={broadcast?.total_recipients ?? 0}
           icon={<Users className="h-4 w-4" />}
           color="bg-muted text-muted-foreground"
         />
         <StatCard
           label={t('stats.sent')}
-          value={broadcast.sent_count}
-          total={broadcast.total_recipients}
+          value={broadcast?.sent_count ?? 0}
+          total={broadcast?.total_recipients ?? 0}
           icon={<Send className="h-4 w-4" />}
           color="bg-primary/10 text-primary"
         />
         <StatCard
           label={t('stats.delivered')}
-          value={broadcast.delivered_count}
-          total={broadcast.total_recipients}
+          value={broadcast?.delivered_count ?? 0}
+          total={broadcast?.total_recipients ?? 0}
           icon={<CheckCheck className="h-4 w-4" />}
           color="bg-teal-500/10 text-teal-400"
         />
         <StatCard
           label={t('stats.read')}
-          value={broadcast.read_count}
-          total={broadcast.total_recipients}
+          value={broadcast?.read_count ?? 0}
+          total={broadcast?.total_recipients ?? 0}
           icon={<Eye className="h-4 w-4" />}
           color="bg-blue-500/10 text-blue-400"
         />
         <StatCard
           label={t('stats.replied')}
-          value={broadcast.replied_count}
-          total={broadcast.total_recipients}
+          value={broadcast?.replied_count ?? 0}
+          total={broadcast?.total_recipients ?? 0}
           icon={<MessageCircle className="h-4 w-4" />}
           color="bg-indigo-500/10 text-indigo-400"
         />
         <StatCard
           label={t('stats.failed')}
-          value={broadcast.failed_count}
-          total={broadcast.total_recipients}
+          value={broadcast?.failed_count ?? 0}
+          total={broadcast?.total_recipients ?? 0}
           icon={<AlertCircle className="h-4 w-4" />}
           color="bg-red-500/10 text-red-400"
         />
@@ -412,15 +412,15 @@ export default function BroadcastDetailPage() {
                     variant="outline"
                     size="sm"
                     className="border-border text-muted-foreground hover:bg-muted"
-                  />
+                  >
+                    <Filter className="h-3.5 w-3.5" />
+                    {statusFilter === 'all'
+                      ? t('allStatuses')
+                      : tStatus(getRecipientStatus(statusFilter).label)}
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
                 }
-              >
-                <Filter className="h-3.5 w-3.5" />
-                {statusFilter === 'all'
-                  ? t('allStatuses')
-                  : tStatus(getRecipientStatus(statusFilter).label)}
-                <ChevronDown className="h-3 w-3" />
-              </DropdownMenuTrigger>
+              />
               <DropdownMenuContent className="border-border bg-popover">
                 <DropdownMenuItem
                   onClick={() => setStatusFilter('all')}
