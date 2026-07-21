@@ -299,38 +299,44 @@ export function CreateTemplateDialog({
       });
       const data = await res.json();
 
-      if (!res.ok) {
-        // The API route now returns Spanish error messages for known
-        // failure classes (auth, permissions, rate-limit). Show them
-        // verbatim — they're already user-friendly.
-        const friendlyError =
-          data?.error || `Error del servidor (${res.status})`;
-
-        // If the template was saved as DRAFT despite the Meta failure,
-        // let the user know it's still usable locally.
-        if (data?.saved_as_draft) {
-          toast.warning(
-            `${friendlyError}\n\nLa plantilla se guardó localmente como borrador.`,
-          );
-          onSuccess?.();
-          onOpenChange(false);
-          return;
+      // ── Success + local save (status 200 with local_only flag) ──
+      // The API now returns 200 for local saves (missing config, broken
+      // token, Evolution) with a descriptive `message` and optional
+      // `error` field for the underlying reason.
+      if (res.ok && data.success) {
+        if (data.local_only) {
+          toast.success(data.message || "Plantilla guardada localmente.");
+          if (data.error) {
+            // Surface the underlying reason as a secondary info toast
+            // so the user knows *why* it wasn't sent to Meta.
+            toast.info(data.error);
+          }
+        } else if (data.dry_run) {
+          toast.success("Plantilla guardada localmente (modo dry-run).");
+        } else {
+          toast.success("Plantilla enviada a Meta para aprobación.");
         }
-
-        throw new Error(friendlyError);
+        onSuccess?.();
+        onOpenChange(false);
+        return;
       }
 
-      // ── Success paths ──────────────────────────────────────────
-      if (data.local_only) {
-        // Evolution mode — saved locally, usable in quick broadcasts.
-        toast.success(data.message || "Plantilla guardada localmente.");
-      } else if (data.dry_run) {
-        toast.success("Plantilla guardada localmente (modo dry-run).");
-      } else {
-        toast.success("Plantilla enviada a Meta para aprobación.");
+      // ── Error paths (status != 200) ───────────────────────────
+      const friendlyError =
+        data?.error || `Error del servidor (${res.status})`;
+
+      // If the template was saved as DRAFT despite the Meta failure,
+      // let the user know it's still usable locally.
+      if (data?.saved_as_draft) {
+        toast.warning(
+          `${friendlyError}\n\nLa plantilla se guardó localmente como borrador.`,
+        );
+        onSuccess?.();
+        onOpenChange(false);
+        return;
       }
-      onSuccess?.();
-      onOpenChange(false);
+
+      throw new Error(friendlyError);
     } catch (err) {
       console.error("Submit error:", err);
       toast.error(

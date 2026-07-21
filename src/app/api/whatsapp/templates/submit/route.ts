@@ -155,21 +155,49 @@ export async function POST(request: Request) {
         .eq('account_id', accountId)
         .single()
       if (configError || !config) {
+        // No Meta config — save locally so the template is usable
+        // for Evolution-based broadcasts and visible in pickers.
+        await upsertTemplateRow(
+          supabase,
+          buildUpsertRow(accountId, user.id, payload, {
+            status: 'local',
+            metaTemplateId: null,
+            submissionError: null,
+          }),
+        )
         return NextResponse.json(
           {
+            success: true,
+            local_only: true,
+            message:
+              'Plantilla guardada localmente. Conecta tu cuenta de Meta en Configuración para enviarla a aprobación.',
             error:
               'WhatsApp not configured. Connect your WhatsApp Business account in Settings first.',
           },
-          { status: 400 },
+          { status: 200 },
         )
       }
       if (!config.waba_id) {
+        // Config exists but WABA ID missing — save locally, template
+        // is still usable for Evolution broadcasts.
+        await upsertTemplateRow(
+          supabase,
+          buildUpsertRow(accountId, user.id, payload, {
+            status: 'local',
+            metaTemplateId: null,
+            submissionError: null,
+          }),
+        )
         return NextResponse.json(
           {
+            success: true,
+            local_only: true,
+            message:
+              'Plantilla guardada localmente. Configura tu WABA ID en Ajustes para enviarla a Meta.',
             error:
               'WABA (WhatsApp Business Account) ID missing. Re-connect your account in Settings.',
           },
-          { status: 400 },
+          { status: 200 },
         )
       }
 
@@ -182,11 +210,12 @@ export async function POST(request: Request) {
       // and the user isn't blocked by a broken Meta integration.
       const isEvolution = process.env.WHATSAPP_PROVIDER === 'evolution'
       if (isEvolution) {
-        // Evolution mode — no Meta submission, local-only save.
+        // Evolution mode — no Meta submission, local-only save with
+        // 'local' status so it appears in pickers immediately.
         const { data: row } = await upsertTemplateRow(
           supabase,
           buildUpsertRow(accountId, user.id, payload, {
-            status: 'DRAFT',
+            status: 'local',
             metaTemplateId: null,
             submissionError: null,
           }),
@@ -201,12 +230,25 @@ export async function POST(request: Request) {
       }
 
       if (!accessToken || accessToken.length < 10) {
+        // Token is broken — save locally so the template isn't lost.
+        await upsertTemplateRow(
+          supabase,
+          buildUpsertRow(accountId, user.id, payload, {
+            status: 'local',
+            metaTemplateId: null,
+            submissionError: null,
+          }),
+        )
         return NextResponse.json(
           {
+            success: true,
+            local_only: true,
+            message:
+              'Plantilla guardada localmente. El token de Meta no es válido.',
             error:
               'Token de acceso de Meta no configurado o inválido. Revisa las credenciales en Configuración → WhatsApp.',
           },
-          { status: 400 },
+          { status: 200 },
         )
       }
 

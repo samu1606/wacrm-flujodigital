@@ -18,11 +18,14 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
+  SelectLabel,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useTranslations } from 'next-intl';
+import type { MessageTemplate } from '@/types';
 
 // ================================================================
 // Plantillas predeterminadas para difusiones rápidas
@@ -85,6 +88,9 @@ export function QuickBroadcast({ open, onClose, onSent }: QuickBroadcastProps) {
   const [loading, setLoading] = useState(false);
   const [tags, setTags] = useState<ContactTag[]>([]);
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [userTemplates, setUserTemplates] = useState<
+    { label: string; value: string; message: string }[]
+  >([]);
 
   // Load contacts
   useEffect(() => {
@@ -94,13 +100,26 @@ export function QuickBroadcast({ open, onClose, onSent }: QuickBroadcastProps) {
     Promise.all([
       supabase.from('contacts').select('id, phone, name').order('created_at', { ascending: false }).limit(500),
       supabase.from('tags').select('id, name').order('name'),
-    ]).then(([{ data: contactData, error: cErr }, { data: tagData }]) => {
+      supabase.from('message_templates').select('name, body_text').order('created_at', { ascending: false }).limit(30),
+    ]).then(([{ data: contactData, error: cErr }, { data: tagData }, { data: tplData }]) => {
       if (cErr) {
         toast.error('Error al cargar contactos');
         return;
       }
       setContacts(contactData || []);
       setTags(tagData || []);
+      // Map user templates into the same shape as DEFAULT_TEMPLATES
+      // so they merge seamlessly into the dropdown.
+      if (tplData) {
+        const mapped = (tplData as Pick<MessageTemplate, 'name' | 'body_text'>[]).map(
+          (t, i) => ({
+            label: `📝 ${t.name}`,
+            value: `user-${i}`,
+            message: t.body_text,
+          }),
+        );
+        setUserTemplates(mapped);
+      }
       // Auto-select all by default
       if (contactData) {
         setSelectedContactIds(new Set(contactData.map((c) => c.id)));
@@ -198,15 +217,32 @@ export function QuickBroadcast({ open, onClose, onSent }: QuickBroadcastProps) {
               <label className="text-sm font-medium">Mensaje</label>
               <Select
                 onValueChange={(val) => {
-                  const tpl = DEFAULT_TEMPLATES.find(t => t.value === val);
+                  const all = [...userTemplates, ...DEFAULT_TEMPLATES];
+                  const tpl = all.find(t => t.value === val);
                   if (tpl) setMessage(tpl.message);
                 }}
               >
-                <SelectTrigger className="h-7 w-auto gap-1 text-xs border-amber-500/30 bg-amber-950/20 text-amber-200 hover:bg-amber-950/40 min-w-[160px]">
+                <SelectTrigger className="h-7 w-auto gap-1 text-xs border-primary/30 bg-primary/10 text-primary-foreground hover:bg-primary/20 min-w-[160px]">
                   <MessageSquare className="size-3" />
                   <SelectValue placeholder="Usar plantilla..." />
                 </SelectTrigger>
-                <SelectContent className="min-w-[260px]">
+                <SelectContent className="min-w-[280px]">
+                  {userTemplates.length > 0 && (
+                    <>
+                      <SelectLabel className="text-[10px] text-muted-foreground">
+                        Tus plantillas
+                      </SelectLabel>
+                      {userTemplates.map(tpl => (
+                        <SelectItem key={tpl.value} value={tpl.value} className="text-sm">
+                          {tpl.label}
+                        </SelectItem>
+                      ))}
+                      <SelectSeparator />
+                      <SelectLabel className="text-[10px] text-muted-foreground">
+                        Plantillas predefinidas
+                      </SelectLabel>
+                    </>
+                  )}
                   {DEFAULT_TEMPLATES.map(tpl => (
                     <SelectItem key={tpl.value} value={tpl.value} className="text-sm">
                       {tpl.label}

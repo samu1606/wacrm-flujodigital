@@ -40,7 +40,7 @@ export function Step1ChooseTemplate({ selectedTemplate, onSelect, onNext, onBack
       const { data, error: fetchError } = await supabase
         .from('message_templates')
         .select('*')
-        .eq('status', 'APPROVED')
+        .in('status', ['APPROVED', 'local', 'PENDING', 'DRAFT'])
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
@@ -135,9 +135,19 @@ export function Step1ChooseTemplate({ selectedTemplate, onSelect, onNext, onBack
                 <p className="line-clamp-3 text-xs text-muted-foreground">{template.body_text}</p>
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                   <span>{template.language ?? 'en_US'}</span>
-                  {/* Status is omitted on purpose — every template
-                      shown here is already filtered to APPROVED,
-                      so the chip carried no information. */}
+                  {template.status !== 'APPROVED' && (
+                    <span
+                      className={
+                        template.status === 'local'
+                          ? 'text-green-400'
+                          : template.status === 'DRAFT'
+                            ? 'text-yellow-400'
+                            : 'text-blue-400'
+                      }
+                    >
+                      · {template.status === 'local' ? 'local' : template.status}
+                    </span>
+                  )}
                 </div>
               </button>
             );
