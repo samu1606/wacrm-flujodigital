@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS public.payments (
 CREATE TABLE IF NOT EXISTS public.subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   account_id UUID NOT NULL UNIQUE,
-  plan TEXT NOT NULL DEFAULT 'emprendedor' CHECK (plan IN ('emprendedor', 'pro', 'business', 'trial')),
+  plan TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'emprendedor', 'pro', 'business', 'trial')),
   status TEXT NOT NULL DEFAULT 'trial' CHECK (status IN ('trial', 'active', 'past_due', 'canceled', 'expired')),
   trial_start TIMESTAMPTZ DEFAULT now(),
   trial_end TIMESTAMPTZ,
@@ -44,9 +44,9 @@ CREATE POLICY "Users view own subscriptions" ON public.subscriptions FOR SELECT 
   account_id IN (SELECT account_id FROM public.profiles WHERE user_id = auth.uid())
 );
 
--- Auto-create trial subscription for existing accounts
+-- Auto-create FREE trial subscription for new accounts (NOT pro by default!)
 INSERT INTO public.subscriptions (account_id, plan, status, trial_start, trial_end)
-SELECT DISTINCT account_id, 'pro', 'trial', now(), now() + INTERVAL '14 days'
+SELECT DISTINCT account_id, 'free', 'trial', now(), now() + INTERVAL '14 days'
 FROM public.profiles
 WHERE account_id IS NOT NULL
   AND account_id NOT IN (SELECT account_id FROM public.subscriptions);
