@@ -23,14 +23,30 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Message not found' }, { status: 404 })
   }
 
-  // If already a Supabase Storage URL (new format), redirect directly
+  // If already a Supabase Storage URL (new format), issue a permanent
+  // redirect. 301 + Cache-Control immutable lets the browser cache the
+  // redirect forever — the proxy is never hit again for this media.
   if (msg.media_url?.includes('/storage/v1/object/public/')) {
-    return NextResponse.redirect(msg.media_url)
+    return new NextResponse(null, {
+      status: 301,
+      headers: {
+        Location: msg.media_url,
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
+    })
   }
 
-  // If media_url is already a data: URL (base64), redirect to it
+  // If media_url is already a data: URL (base64), redirect to it.
+  // Use 301 so the browser can cache — data: URIs are immutable by
+  // definition (the content IS the URL).
   if (msg.media_url?.startsWith('data:')) {
-    return NextResponse.redirect(msg.media_url)
+    return new NextResponse(null, {
+      status: 301,
+      headers: {
+        Location: msg.media_url,
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
+    })
   }
 
   // If media_url is a regular URL, try to proxy it
@@ -45,7 +61,7 @@ export async function GET(request: NextRequest) {
         return new NextResponse(buffer, {
           headers: {
             'Content-Type': contentType,
-            'Cache-Control': 'public, max-age=86400',
+            'Cache-Control': 'public, max-age=31536000, immutable',
           },
         })
       }
@@ -163,7 +179,7 @@ export async function GET(request: NextRequest) {
         return new NextResponse(buffer, {
           headers: {
             'Content-Type': mime,
-            'Cache-Control': 'public, max-age=86400',
+            'Cache-Control': 'public, max-age=31536000, immutable',
           },
         })
       }

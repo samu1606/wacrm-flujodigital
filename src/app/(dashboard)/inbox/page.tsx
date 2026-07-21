@@ -48,6 +48,13 @@ function InboxPageInner() {
     useState<Conversation | null>(null);
   const [activeContact, setActiveContact] = useState<Contact | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  /**
+   * Client-side message cache keyed by conversation id. When switching
+   * back to a previously-visited chat, cached messages are shown instantly
+   * (Optimistic UI) while the background fetch syncs silently. The cache
+   * is kept in a ref to avoid triggering re-renders on write.
+   */
+  const messageCacheRef = useRef<Map<string, Message[]>>(new Map());
   const [whatsappConnected, setWhatsappConnected] = useState<boolean | null>(
     null
   );
@@ -398,6 +405,19 @@ function InboxPageInner() {
   }, []);
 
   /**
+   * Keep the message cache in sync whenever `messages` changes — covers
+   * realtime INSERT/UPDATE events, optimistic agent sends, and background
+   * syncs from MessageThread. This effect is cheap (ref mutation, no
+   * re-render) and guarantees the cache is always fresh for the active
+   * conversation.
+   */
+  useEffect(() => {
+    if (activeConversation?.id && messages.length > 0) {
+      messageCacheRef.current.set(activeConversation.id, messages);
+    }
+  }, [messages, activeConversation?.id]);
+
+  /**
    * Manual refresh trigger for the thread-header refresh button.
    * Bumps the same resyncToken the reconnect / visibility paths use,
    * so it goes through the existing dedupe & refetch plumbing — no
@@ -460,9 +480,14 @@ function InboxPageInner() {
       // when conversationId changes — so messages would stay empty until
       // the user navigated away and back. Bail out early instead.
       if (activeConversation?.id === conv.id) return;
+
+      // Optimistic UI: show cached messages instantly if we've visited
+      // this conversation before. MessageThread will sync in background.
+      const cached = messageCacheRef.current.get(conv.id);
+
       setActiveConversation(conv);
       setActiveContact(conv.contact ?? null);
-      setMessages([]);
+      setMessages(cached ?? []);
       // Optimistically clear the unread badge for this conv. The
       // server-side reset is fired by the unread-reset effect inside
       // MessageThread (which reads activeConversation.unread_count, not
@@ -510,8 +535,13 @@ function InboxPageInner() {
 
 
   const handleMessagesLoaded = useCallback((loaded: Message[]) => {
+    // Persist into the client-side cache so switching back to this
+    // conversation later shows messages immediately.
+    if (activeConversation?.id) {
+      messageCacheRef.current.set(activeConversation.id, loaded);
+    }
     setMessages(loaded);
-  }, []);
+  }, [activeConversation?.id]);
 
   const handleNewMessage = useCallback((msg: Message) => {
     setMessages((prev) => {

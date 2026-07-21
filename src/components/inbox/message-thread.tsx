@@ -268,6 +268,14 @@ export function MessageThread({
   const conversationId = conversation?.id;
   const hasUnread = (conversation?.unread_count ?? 0) > 0;
 
+  // Stable ref so the fetch effect can read the latest `messages`
+  // without listing it as a dependency (which would fire the fetch on
+  // every realtime INSERT and defeat the purpose of the realtime channel).
+  const messagesRef = useRef(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  });
+
   // Fetch messages whenever the selected conversation changes. Kept
   // separate from the unread-reset effect so that incoming messages
   // arriving while the thread is open don't trigger a full refetch —
@@ -278,8 +286,15 @@ export function MessageThread({
     const supabase = createClient();
     let cancelled = false;
 
+    // Cache hit: the parent pre-populated messages from its in-memory
+    // cache. Skip the loading spinner so the thread renders instantly;
+    // the background fetch still runs to converge state.
+    const isCacheHit = messagesRef.current.length > 0;
+
     (async () => {
-      setLoading(true);
+      if (!isCacheHit) {
+        setLoading(true);
+      }
 
       const { data, error } = await supabase
         .from("messages")
