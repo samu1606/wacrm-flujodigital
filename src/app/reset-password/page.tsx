@@ -56,8 +56,10 @@ export default function ResetPasswordPage() {
         // still works — let the user proceed.
         setRecoveryEvent(true);
       } else {
-        // No session at all — middleware should have caught this, but
-        // be defensive.
+        // No session — the middleware is configured to pass through
+        // (/reset-password is public), so this guard is the real
+        // enforcement. Only users who exchanged a recovery code and
+        // received a session from /auth/callback get the form.
         router.replace("/login");
       }
     });

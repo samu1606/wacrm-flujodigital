@@ -2,6 +2,21 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  // ── Public paths — never intercept these ──────────────────────
+  // /auth/callback is the PKCE callback from Supabase. It runs
+  // BEFORE a session exists; blocking it here would deadlock
+  // every auth flow (login, signup, password reset).
+  // /reset-password handles its own session check in the page
+  // component (onAuthStateChange + getSession) — the middleware
+  // must pass through so the callback redirect can land.
+  const pathname = request.nextUrl.pathname;
+  if (
+    pathname.startsWith("/auth/callback") ||
+    pathname.startsWith("/reset-password")
+  ) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -49,16 +64,16 @@ export async function middleware(request: NextRequest) {
   // a forwarded invite link to someone who's already signed in
   // would silently drop them on /dashboard.
   if (user && (
-    request.nextUrl.pathname === '/login' ||
-    request.nextUrl.pathname === '/signup' ||
-    request.nextUrl.pathname === '/forgot-password'
+    pathname === '/login' ||
+    pathname === '/signup' ||
+    pathname === '/forgot-password'
   )) {
     const url = request.nextUrl.clone()
     const inviteToken = request.nextUrl.searchParams.get('invite')
     if (
       inviteToken &&
-      (request.nextUrl.pathname === '/login' ||
-        request.nextUrl.pathname === '/signup')
+      (pathname === '/login' ||
+        pathname === '/signup')
     ) {
       url.pathname = `/join/${encodeURIComponent(inviteToken)}`
       url.search = ''
@@ -69,18 +84,21 @@ export async function middleware(request: NextRequest) {
     return withRefreshedCookies(NextResponse.redirect(url))
   }
 
-  // Protected pages - redirect to login if not authenticated.
-  // /reset-password is protected so only authenticated users who have
-  // exchanged a recovery code can reach it (prevents direct navigation).
-  const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/settings', '/reset-password']
-  if (!user && protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {
+  // Protected pages — redirect unauthenticated users to login.
+  // /reset-password is deliberately NOT listed here — its page
+  // component handles auth internally (checks for recovery session
+  // or redirects to /login). This avoids a deadlock where the
+  // callback sets cookies but the middleware on /reset-password
+  // reads stale cookies from the pre-session request.
+  const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/settings']
+  if (!user && protectedPaths.some(path => pathname.startsWith(path))) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return withRefreshedCookies(NextResponse.redirect(url))
   }
 
   // API routes that need auth (not webhooks / evolution / qr)
-  const isWhatsAppApi = request.nextUrl.pathname.startsWith('/api/whatsapp/')
+  const isWhatsAppApi = pathname.startsWith('/api/whatsapp/')
   const isWebhook = request.nextUrl.pathname.includes('/webhook') || request.nextUrl.pathname.includes('/evolution') || request.nextUrl.pathname.includes('/qr')
   if (!user && isWhatsAppApi && !isWebhook) {
     return withRefreshedCookies(
