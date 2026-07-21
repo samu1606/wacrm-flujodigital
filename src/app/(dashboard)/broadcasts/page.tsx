@@ -16,6 +16,7 @@ import {
 import { Plus, Radio, Loader2, Zap } from 'lucide-react';
 import { useCan } from '@/hooks/use-can';
 import { GatedButton } from '@/components/ui/gated-button';
+import { SafeRender } from '@/components/ui/safe-render';
 import { getBroadcastStatus } from '@/lib/broadcast-status';
 import { QuickBroadcast } from '@/components/broadcasts/quick-broadcast';
 import { useTranslations } from 'next-intl';
@@ -174,6 +175,7 @@ export default function BroadcastsPage() {
   // but this guards against a malformed DB response.
 
   return (
+    <SafeRender name="la lista de difusiones">
     <div className="space-y-6">
       {/* Quick Broadcast Dialog — wrapped defensively so a crash in
           the template picker / dialog doesn't blow up the entire page. */}
@@ -354,5 +356,6 @@ export default function BroadcastsPage() {
         </div>
       )}
     </div>
+    </SafeRender>
   );
 }
