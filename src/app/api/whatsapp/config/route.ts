@@ -85,6 +85,29 @@ export async function GET() {
       )
     }
 
+    // Check Evolution instance first (per-account, multi-tenant)
+    const { data: evoInst } = await supabase
+      .from('whatsapp_instances')
+      .select('evolution_instance_name, status, phone_number')
+      .eq('account_id', accountId)
+      .eq('status', 'connected')
+      .maybeSingle()
+
+    if (evoInst?.evolution_instance_name) {
+      return NextResponse.json(
+        {
+          connected: true,
+          provider: 'evolution',
+          instance_name: evoInst.evolution_instance_name,
+          phone_info: {
+            display_phone_number: evoInst.phone_number || 'WhatsApp Web (Baileys)',
+            verified_name: 'Evolution API',
+          },
+        },
+        { status: 200 }
+      )
+    }
+
     const { data: config, error: configError } = await supabase
       .from('whatsapp_config')
       .select('phone_number_id, access_token, status')

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import { normalizeStatus } from '@/lib/whatsapp/template-status-normalize'
+import { checkWhatsAppConnection } from '@/lib/whatsapp/connection-check'
 import type { TemplateButton, TemplateSampleValues } from '@/types'
 
 /**
@@ -150,13 +151,10 @@ export async function POST() {
       )
     }
 
-    const { data: config, error: configError } = await supabase
-      .from('whatsapp_config')
-      .select('*')
-      .eq('account_id', accountId)
-      .single()
+    // Check connection — supports Meta AND Evolution per-account
+    const connection = await checkWhatsAppConnection(supabase, accountId);
 
-    if (configError || !config) {
+    if (connection.type === 'none') {
       return NextResponse.json(
         {
           error:
@@ -166,7 +164,27 @@ export async function POST() {
       )
     }
 
-    if (!config.waba_id) {
+    // If Evolution-only (no Meta), there's nothing to sync from Meta API.
+    // Return local templates only — the UI shows them as-is.
+    if (connection.type === 'evolution') {
+      const { data: localTemplates } = await supabase
+        .from('message_templates')
+        .select('*')
+        .eq('account_id', accountId)
+        .order('created_at', { ascending: false });
+
+      return NextResponse.json({
+        synced: 0,
+        updated: 0,
+        total: localTemplates?.length ?? 0,
+        errors: [],
+        provider: 'evolution',
+        message: 'Usando Evolution API — las plantillas son locales.',
+      });
+    }
+
+    // Meta connection — validate minimum required fields
+    if (!connection.wabaId) {
       return NextResponse.json(
         {
           error:
@@ -176,12 +194,26 @@ export async function POST() {
       )
     }
 
+    // Load Meta config for access token
+    const { data: config } = await supabase
+      .from('whatsapp_config')
+      .select('*')
+      .eq('account_id', accountId)
+      .single();
+
+    if (!config) {
+      return NextResponse.json(
+        { error: 'Meta config row missing — please reconnect.' },
+        { status: 400 },
+      );
+    }
+
     const accessToken = decrypt(config.access_token)
 
     const metaTemplates: MetaTemplate[] = []
     let nextUrl:
       | string
-      | null = `${META_API_BASE}/${config.waba_id}/message_templates?limit=100&fields=id,name,language,status,category,components,quality_score`
+      | null = `${META_API_BASE}/${connection.wabaId}/message_templates?limit=100&fields=id,name,language,status,category,components,quality_score`
     const PAGE_CAP = 20
     let pageCount = 0
 

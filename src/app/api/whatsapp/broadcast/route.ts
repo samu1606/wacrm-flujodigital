@@ -15,6 +15,8 @@ import {
   rateLimitResponse,
   RATE_LIMITS,
 } from '@/lib/rate-limit'
+import { checkWhatsAppConnection } from '@/lib/whatsapp/connection-check'
+import { createAndDeliverEvoBroadcast } from '@/lib/whatsapp/broadcast-evo'
 
 interface BroadcastResult {
   phone: string
@@ -134,23 +136,80 @@ export async function POST(request: Request) {
       )
     }
 
-    const { data: config, error: configError } = await supabase
-      .from('whatsapp_config')
-      .select('*')
-      .eq('account_id', accountId)
-      .single()
-
-    if (configError || !config) {
+    // Check WhatsApp connection — supports Meta AND Evolution per-account
+    const connection = await checkWhatsAppConnection(supabase, accountId);
+    if (connection.type === 'none') {
       return NextResponse.json(
         {
           error:
             'WhatsApp not configured. Please set up your WhatsApp integration first.',
         },
         { status: 400 }
-      )
+      );
     }
 
-    const accessToken = decrypt(config.access_token)
+    // ── Evolution API broadcast path ────────────────────────────
+    if (connection.type === 'evolution') {
+      // Look up the template body text for the message
+      const { data: tpl } = await supabase
+        .from('message_templates')
+        .select('body_text')
+        .eq('account_id', accountId)
+        .eq('name', template_name)
+        .eq('language', template_language || 'en_US')
+        .maybeSingle();
+
+      const messageText = tpl?.body_text || template_name;
+
+      // Build contact list for Evo broadcast engine
+      const contacts = recipients.map((r) => ({
+        id: `ext_${r.phone.replace(/\D/g, '')}`,
+        phone: r.phone,
+        name: r.phone,
+      }));
+
+      try {
+        const result = await createAndDeliverEvoBroadcast(supabase, {
+          name: template_name,
+          messageText,
+          contacts,
+          accountId,
+          userId: user.id,
+        });
+
+        return NextResponse.json({
+          broadcastId: result.broadcastId,
+          total: result.total,
+          sent: result.total,
+          failed: 0,
+          provider: 'evolution',
+          results: recipients.map((r) => ({
+            phone: r.phone,
+            status: 'sent' as const,
+          })),
+        });
+      } catch (e) {
+        const message = e instanceof Error ? e.message : 'Evolution broadcast failed.';
+        console.error('[broadcast] Evolution error:', message);
+        return NextResponse.json({ error: message }, { status: 500 });
+      }
+    }
+
+    // ── Meta API broadcast path ─────────────────────────────────
+    const { data: config } = await supabase
+      .from('whatsapp_config')
+      .select('*')
+      .eq('account_id', accountId)
+      .single();
+
+    if (!config) {
+      return NextResponse.json(
+        { error: 'Meta config row missing — please reconnect.' },
+        { status: 400 }
+      );
+    }
+
+    const accessToken = decrypt(config.access_token);
 
     // Load the template row once so sendTemplateMessage can build
     // header + button components on each iteration. Loading inside

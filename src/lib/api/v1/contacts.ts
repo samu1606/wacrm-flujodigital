@@ -74,6 +74,7 @@ export async function resolveAuditUserId(
   db: SupabaseClient,
   accountId: string
 ): Promise<string> {
+  // Try Meta config owner first
   const { data: config } = await db
     .from('whatsapp_config')
     .select('user_id')
@@ -82,6 +83,26 @@ export async function resolveAuditUserId(
   const configOwner = config?.user_id as string | undefined;
   if (configOwner) return configOwner;
 
+  // Try Evolution instance owner
+  const { data: evoInst } = await db
+    .from('whatsapp_instances')
+    .select('user_id')
+    .eq('account_id', accountId)
+    .eq('status', 'connected')
+    .maybeSingle();
+  const evoOwner = evoInst?.user_id as string | undefined;
+  if (evoOwner) return evoOwner;
+
+  // Try any Evolution instance (even if disconnected)
+  const { data: anyEvo } = await db
+    .from('whatsapp_instances')
+    .select('user_id')
+    .eq('account_id', accountId)
+    .maybeSingle();
+  const anyEvoOwner = anyEvo?.user_id as string | undefined;
+  if (anyEvoOwner) return anyEvoOwner;
+
+  // Fall back to account owner
   const { data: account } = await db
     .from('accounts')
     .select('owner_user_id')

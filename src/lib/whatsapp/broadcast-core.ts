@@ -29,6 +29,7 @@ import {
 import { isMessageTemplate } from '@/lib/whatsapp/template-row-guard';
 import type { MessageTemplate } from '@/types';
 import { findOrCreateContact } from '@/lib/api/v1/contacts';
+import { checkWhatsAppConnection } from '@/lib/whatsapp/connection-check';
 
 /** Thrown by createBroadcast on a caller-visible failure; route maps it. */
 export class BroadcastError extends Error {
@@ -109,8 +110,26 @@ export async function createBroadcast(
     );
   }
 
-  // Config (fail fast + provides the audit trail owner already resolved
-  // by the caller). Meta send needs phone_number_id + decrypted token.
+  // Check WhatsApp connection — supports Meta AND Evolution
+  const connection = await checkWhatsAppConnection(db, accountId);
+  if (connection.type === 'none') {
+    throw new BroadcastError(
+      'whatsapp_not_configured',
+      'WhatsApp not configured. Please set up your WhatsApp integration first.',
+      400
+    );
+  }
+
+  // Evolution broadcast path — return a plan flagging evo transport
+  if (connection.type === 'evolution') {
+    throw new BroadcastError(
+      'use_evolution_broadcast',
+      'Use the Evolution broadcast API (/api/v1/messages) for WhatsApp Web (Baileys) sends. Template-based Meta broadcasts are not available on this connection.',
+      400
+    );
+  }
+
+  // Meta connection — load config for token + phone_number_id
   const { data: config, error: configError } = await db
     .from('whatsapp_config')
     .select('*')

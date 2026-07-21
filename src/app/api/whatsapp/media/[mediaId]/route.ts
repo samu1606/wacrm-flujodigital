@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api'
 import { decrypt } from '@/lib/whatsapp/encryption'
+import { checkWhatsAppConnection } from '@/lib/whatsapp/connection-check'
 
 export async function GET(
   request: Request,
@@ -48,7 +49,22 @@ export async function GET(
       )
     }
 
-    // Fetch and decrypt WhatsApp config
+    // Check if account uses Evolution (media is served via /media/proxy)
+    const conn = await checkWhatsAppConnection(supabase, accountId);
+    if (conn.type === 'none') {
+      return NextResponse.json(
+        { error: 'WhatsApp not configured' },
+        { status: 400 }
+      );
+    }
+    if (conn.type === 'evolution') {
+      return NextResponse.json(
+        { error: 'Use /api/whatsapp/media/proxy for Evolution media' },
+        { status: 400 }
+      );
+    }
+
+    // Meta API — fetch and decrypt WhatsApp config
     const { data: config, error: configError } = await supabase
       .from('whatsapp_config')
       .select('*')

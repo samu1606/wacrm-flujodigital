@@ -203,9 +203,19 @@ function InboxPageInner() {
         .maybeSingle();
       const accountId = profile?.account_id as string | undefined;
 
-      // Evolution API mode: treat WhatsApp as always connected
-      if (process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE) {
-        setWhatsappConnected(true);
+      // Evolution API mode: check BOTH global env AND per-account instance
+      if (process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE || process.env.WHATSAPP_PROVIDER === 'evolution') {
+        if (accountId) {
+          const { data: evoInst } = await supabase
+            .from("whatsapp_instances")
+            .select("status")
+            .eq("account_id", accountId)
+            .eq("status", "connected")
+            .maybeSingle();
+          setWhatsappConnected(!!evoInst);
+        } else {
+          setWhatsappConnected(true);
+        }
         return;
       }
 
@@ -214,13 +224,23 @@ function InboxPageInner() {
         return;
       }
 
-      const { data } = await supabase
+      // Check Meta config AND Evolution instance (per-account)
+      const { data: metaConfig } = await supabase
         .from("whatsapp_config")
         .select("status")
         .eq("account_id", accountId)
         .maybeSingle();
 
-      setWhatsappConnected(data?.status === "connected");
+      const { data: evoInst } = await supabase
+        .from("whatsapp_instances")
+        .select("status")
+        .eq("account_id", accountId)
+        .eq("status", "connected")
+        .maybeSingle();
+
+      setWhatsappConnected(
+        metaConfig?.status === "connected" || !!evoInst
+      );
     };
 
     checkConnection();

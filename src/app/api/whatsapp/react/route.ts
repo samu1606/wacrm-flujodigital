@@ -8,6 +8,7 @@ import {
   rateLimitResponse,
   RATE_LIMITS,
 } from '@/lib/rate-limit';
+import { checkWhatsAppConnection } from '@/lib/whatsapp/connection-check';
 
 /**
  * POST /api/whatsapp/react
@@ -109,15 +110,62 @@ export async function POST(request: Request) {
     }
 
     // WhatsApp config + access token. Account-scoped post-multi-user.
-    const { data: config, error: configError } = await supabase
+    const connection = await checkWhatsAppConnection(supabase, accountId);
+
+    if (connection.type === 'none') {
+      return NextResponse.json(
+        { error: 'WhatsApp not configured.' },
+        { status: 400 },
+      );
+    }
+
+    // Store reaction locally regardless of transport
+    if (emoji === '') {
+      const { error: delError } = await supabase
+        .from('message_reactions')
+        .delete()
+        .eq('message_id', targetMessage.id)
+        .eq('actor_type', 'agent')
+        .eq('actor_id', user.id);
+      if (delError) {
+        console.error('[whatsapp/react] Failed to delete reaction:', delError);
+      }
+    } else {
+      const { error: upsError } = await supabase
+        .from('message_reactions')
+        .upsert({
+          message_id: targetMessage.id,
+          actor_type: 'agent',
+          actor_id: user.id,
+          emoji,
+          created_at: new Date().toISOString(),
+        }, { onConflict: 'message_id,actor_type,actor_id' });
+      if (upsError) {
+        console.error('[whatsapp/react] Failed to upsert reaction:', upsError);
+      }
+    }
+
+    if (connection.type === 'evolution') {
+      // Evolution (Baileys) doesn't support sending reactions via API.
+      // The reaction is stored locally and visible in the CRM only.
+      return NextResponse.json({
+        success: true,
+        local_only: true,
+        provider: 'evolution',
+        message: 'Reacción guardada (Evolution no soporta reacciones vía API).',
+      });
+    }
+
+    // Meta connection — send reaction via Meta API
+    const { data: config } = await supabase
       .from('whatsapp_config')
       .select('phone_number_id, access_token')
       .eq('account_id', accountId)
       .single();
 
-    if (configError || !config) {
+    if (!config) {
       return NextResponse.json(
-        { error: 'WhatsApp not configured.' },
+        { error: 'Meta config row missing — please reconnect.' },
         { status: 400 },
       );
     }

@@ -11,6 +11,7 @@ import {
 } from '@/lib/whatsapp/template-validators'
 import { buildMetaTemplatePayload } from '@/lib/whatsapp/template-components'
 import { ensureImageHeaderHandle } from '@/lib/whatsapp/template-header-handle'
+import { checkWhatsAppConnection } from '@/lib/whatsapp/connection-check'
 
 /**
  * Per-template lifecycle endpoint.
@@ -138,48 +139,55 @@ export async function PATCH(
     }
 
     if (!isDryRun()) {
-      const { data: config, error: configError } = await supabase
-        .from('whatsapp_config')
-        .select('*')
-        .eq('account_id', accountId)
-        .single()
-      if (configError || !config) {
-        return NextResponse.json(
-          { error: 'WhatsApp not configured.' },
-          { status: 400 },
-        )
-      }
-      const accessToken = decrypt(config.access_token)
+      const connection = await checkWhatsAppConnection(supabase, accountId);
 
-      // Image headers need a fresh Resumable-Upload handle on every edit
-      // (Meta replaces components wholesale). Derive from header_media_url.
-      try {
-        await ensureImageHeaderHandle(payload, accessToken)
-      } catch (e) {
-        return NextResponse.json(
-          { error: e instanceof Error ? e.message : 'Header image upload failed.' },
-          { status: 400 },
-        )
-      }
+      if (connection.type === 'meta') {
+        // Meta connection — load config and push update to Meta API
+        const { data: config } = await supabase
+          .from('whatsapp_config')
+          .select('*')
+          .eq('account_id', accountId)
+          .single();
 
-      const metaPayload = buildMetaTemplatePayload(payload)
-      try {
-        await editMessageTemplate({
-          metaTemplateId: existing.meta_template_id,
-          accessToken,
-          components: metaPayload.components,
-        })
-      } catch (e) {
-        const message = e instanceof Error ? e.message : 'Meta edit failed.'
-        await supabase
-          .from('message_templates')
-          .update({
-            submission_error: message,
-            last_submitted_at: new Date().toISOString(),
-          })
-          .eq('id', id)
-        return NextResponse.json({ error: message }, { status: 502 })
+        if (!config) {
+          return NextResponse.json(
+            { error: 'WhatsApp Meta config missing — please reconnect.' },
+            { status: 400 },
+          );
+        }
+
+        const accessToken = decrypt(config.access_token);
+
+        // Image headers need a fresh Resumable-Upload handle on every edit
+        try {
+          await ensureImageHeaderHandle(payload, accessToken);
+        } catch (e) {
+          return NextResponse.json(
+            { error: e instanceof Error ? e.message : 'Header image upload failed.' },
+            { status: 400 },
+          );
+        }
+
+        const metaPayload = buildMetaTemplatePayload(payload);
+        try {
+          await editMessageTemplate({
+            metaTemplateId: existing.meta_template_id,
+            accessToken,
+            components: metaPayload.components,
+          });
+        } catch (e) {
+          const message = e instanceof Error ? e.message : 'Meta edit failed.';
+          await supabase
+            .from('message_templates')
+            .update({
+              submission_error: message,
+              last_submitted_at: new Date().toISOString(),
+            })
+            .eq('id', id);
+          return NextResponse.json({ error: message }, { status: 502 });
+        }
       }
+      // Evolution or dry-run: skip Meta API call, update local DB only below
     }
 
     // Meta accepted the edit — status flips back to PENDING for review.
@@ -278,29 +286,33 @@ export async function DELETE(
     }
 
     if (existing.meta_template_id && !isDryRun()) {
-      const { data: config, error: configError } = await supabase
-        .from('whatsapp_config')
-        .select('*')
-        .eq('account_id', accountId)
-        .single()
-      if (configError || !config || !config.waba_id) {
-        return NextResponse.json(
-          { error: 'WhatsApp not configured — cannot delete on Meta.' },
-          { status: 400 },
-        )
+      // Only call Meta delete if actually connected via Meta
+      const connection = await checkWhatsAppConnection(supabase, accountId);
+
+      if (connection.type === 'meta') {
+        const { data: config } = await supabase
+          .from('whatsapp_config')
+          .select('*')
+          .eq('account_id', accountId)
+          .single();
+
+        if (config?.waba_id) {
+          const accessToken = decrypt(config.access_token);
+          try {
+            await deleteMessageTemplate({
+              wabaId: config.waba_id,
+              accessToken,
+              name: existing.name,
+              metaTemplateId: existing.meta_template_id,
+            });
+          } catch (e) {
+            const message = e instanceof Error ? e.message : 'Meta delete failed.';
+            // Non-fatal — still delete local row below
+            console.warn('[templates] Meta delete failed, removing local row anyway:', message);
+          }
+        }
       }
-      const accessToken = decrypt(config.access_token)
-      try {
-        await deleteMessageTemplate({
-          wabaId: config.waba_id,
-          accessToken,
-          name: existing.name,
-          metaTemplateId: existing.meta_template_id,
-        })
-      } catch (e) {
-        const message = e instanceof Error ? e.message : 'Meta delete failed.'
-        return NextResponse.json({ error: message }, { status: 502 })
-      }
+      // Evolution or no Meta connection: delete local row only (below)
     }
 
     const { error: delErr } = await supabase

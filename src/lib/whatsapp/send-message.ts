@@ -258,13 +258,14 @@ export async function sendMessageToConversation(
     );
   }
 
-  // WhatsApp config, account-scoped (Meta only).
-  const useEvo = isEvolutionProvider();
+  // WhatsApp config — check Meta first, then Evolution per-account
+  let useEvo = isEvolutionProvider();
   let accessToken = '';
   let phoneNumberId = '';
   let evoInstanceName = EVOLUTION_INSTANCE; // default
 
   if (!useEvo) {
+    // Try Meta config first
     const { data: config, error: configError } = await db
       .from('whatsapp_config')
       .select('*')
@@ -272,33 +273,47 @@ export async function sendMessageToConversation(
       .single();
 
     if (configError || !config) {
-      throw new SendMessageError(
-        'whatsapp_not_configured',
-        'WhatsApp not configured. Please set up your WhatsApp integration first.',
-        400
-      );
-    }
+      // No Meta config — check if account has Evolution instance instead
+      const { data: evoInst } = await db
+        .from('whatsapp_instances')
+        .select('evolution_instance_name, status')
+        .eq('account_id', accountId)
+        .eq('status', 'connected')
+        .maybeSingle();
 
-    accessToken = decrypt(config.access_token);
-    phoneNumberId = config.phone_number_id;
+      if (evoInst?.evolution_instance_name) {
+        useEvo = true;
+        evoInstanceName = evoInst.evolution_instance_name;
+        console.log('[send-message] Falling back to Evolution API, instance:', evoInstanceName);
+      } else {
+        throw new SendMessageError(
+          'whatsapp_not_configured',
+          'WhatsApp not configured. Please set up your WhatsApp integration first.',
+          400
+        );
+      }
+    } else {
+      accessToken = decrypt(config.access_token);
+      phoneNumberId = config.phone_number_id;
 
-    // Self-heal legacy CBC ciphertexts. Fire-and-forget; idempotent.
-    if (isLegacyFormat(config.access_token)) {
-      void db
-        .from('whatsapp_config')
-        .update({ access_token: encrypt(accessToken) })
-        .eq('id', config.id)
-        .then(({ error }: { error: { message: string } | null }) => {
-          if (error) {
-            console.warn(
-              '[send-message] access_token GCM upgrade failed:',
-              error.message
-            );
-          }
-        });
+      // Self-heal legacy CBC ciphertexts. Fire-and-forget; idempotent.
+      if (isLegacyFormat(config.access_token)) {
+        void db
+          .from('whatsapp_config')
+          .update({ access_token: encrypt(accessToken) })
+          .eq('id', config.id)
+          .then(({ error }: { error: { message: string } | null }) => {
+            if (error) {
+              console.warn(
+                '[send-message] access_token GCM upgrade failed:',
+                error.message
+              );
+            }
+          });
+      }
     }
   } else {
-    // Look up the account's Evolution instance for multi-tenant routing
+    // Global Evolution mode — look up the account's instance for multi-tenant routing
     const { data: instance } = await db
       .from('whatsapp_instances')
       .select('evolution_instance_name, status')
