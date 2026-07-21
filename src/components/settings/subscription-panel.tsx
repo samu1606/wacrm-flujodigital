@@ -137,7 +137,8 @@ export function SubscriptionPanel() {
         const tx = result?.transaction;
         if (tx?.status === 'APPROVED') {
           toast.success('¡Pago aprobado! 🎉');
-          setTimeout(fetchSub, 3000);
+          // DIRECTLY activate subscription via API (reliable fallback)
+          activateSubscriptionAfterPayment(plan, data.reference, tx.id);
         } else if (tx?.status === 'PENDING') {
           toast.info('Pago pendiente. Te notificaremos.');
           setTimeout(fetchSub, 5000);
@@ -150,6 +151,30 @@ export function SubscriptionPanel() {
       toast.error(err?.message || 'Error al procesar el pago');
     } finally {
       setLoadingPlan(null);
+    }
+  }
+
+  async function activateSubscriptionAfterPayment(plan: string, reference: string, transactionId: string) {
+    try {
+      const res = await fetch('/api/wompi/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reference, plan, transactionId }),
+      });
+      const result = await res.json();
+      if (result.status === 'ok') {
+        console.log('[wompi] Subscription activated via API:', result.plan);
+        // Give DB a moment, then refetch
+        setTimeout(fetchSub, 2000);
+      } else {
+        console.warn('[wompi] Activate API returned:', result);
+        // Still refetch — webhook might have handled it
+        setTimeout(fetchSub, 3000);
+      }
+    } catch (err) {
+      console.error('[wompi] Activate API call failed:', err);
+      // Still refetch — webhook might have handled it
+      setTimeout(fetchSub, 3000);
     }
   }
 

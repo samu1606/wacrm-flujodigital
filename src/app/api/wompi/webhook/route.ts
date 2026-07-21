@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
   const eventType = event?.event || '';
   const txData = event?.data?.transaction || {};
 
-  console.log('[wompi/webhook] Event:', eventType, 'Tx:', txData?.id, 'Status:', txData?.status);
+  console.log('[wompi/webhook] 📩 Event:', eventType, '| Tx:', txData?.id, '| Status:', txData?.status, '| Ref:', txData?.reference);
 
   if (!eventType.includes('transaction')) {
     return NextResponse.json({ status: 'ignored' });
