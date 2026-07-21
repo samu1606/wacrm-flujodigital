@@ -25,7 +25,6 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useTranslations } from 'next-intl';
-import type { MessageTemplate } from '@/types';
 
 // ================================================================
 // Plantillas predeterminadas para difusiones rápidas
@@ -100,24 +99,26 @@ export function QuickBroadcast({ open, onClose, onSent }: QuickBroadcastProps) {
     Promise.all([
       supabase.from('contacts').select('id, phone, name').order('created_at', { ascending: false }).limit(500),
       supabase.from('tags').select('id, name').order('name'),
-      supabase.from('message_templates').select('name, body_text').order('created_at', { ascending: false }).limit(30),
-    ]).then(([{ data: contactData, error: cErr }, { data: tagData }, { data: tplData }]) => {
+      // Fetch templates via our server-side API (not direct Supabase)
+      // so RLS / session issues don't silently return empty.
+      fetch('/api/whatsapp/templates').then(r => r.json()),
+    ]).then(([{ data: contactData, error: cErr }, { data: tagData }, tplResult]) => {
       if (cErr) {
         toast.error('Error al cargar contactos');
         return;
       }
       setContacts(contactData || []);
       setTags(tagData || []);
-      // Map user templates into the same shape as DEFAULT_TEMPLATES
-      // so they merge seamlessly into the dropdown.
-      if (tplData) {
-        const mapped = (tplData as Pick<MessageTemplate, 'name' | 'body_text'>[]).map(
-          (t, i) => ({
-            label: `📝 ${t.name}`,
-            value: `user-${i}`,
-            message: t.body_text,
-          }),
-        );
+      // Map API response into {label, value, message} shape for the dropdown.
+      const tplData = tplResult?.templates as
+        | { name: string; body_text: string }[]
+        | undefined;
+      if (tplData && tplData.length > 0) {
+        const mapped = tplData.map((t, i) => ({
+          label: `📝 ${t.name}`,
+          value: `user-${i}`,
+          message: t.body_text,
+        }));
         setUserTemplates(mapped);
       }
       // Auto-select all by default
