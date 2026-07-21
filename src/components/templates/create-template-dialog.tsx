@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
   Plus,
   Loader2,
-  AlertCircle,
+  Info,
   X,
   Upload,
 } from "lucide-react";
@@ -362,12 +362,12 @@ export function CreateTemplateDialog({
           </DialogHeader>
 
           {form.category === "Authentication" && (
-            <div className="flex items-start gap-2 rounded border border-amber-700/40 bg-amber-950/30 px-3 py-2 text-xs text-amber-300">
-              <AlertCircle className="size-4 mt-0.5 shrink-0" />
+            <div className="flex items-start gap-2 rounded border border-blue-800/40 bg-blue-950/20 px-3 py-2 text-xs text-blue-300">
+              <Info className="size-4 mt-0.5 shrink-0" />
               <p>
-                <strong>Authentication templates are restricted.</strong>{" "}
-                Meta requires business verification and these templates
-                cannot be used for broadcasts.
+                <strong>Nota:</strong> Las plantillas de autenticación
+                (OTP/Códigos) requieren verificación de negocio en Meta
+                y no pueden usarse para difusiones masivas.
               </p>
             </div>
           )}
@@ -379,7 +379,15 @@ export function CreateTemplateDialog({
               <Input
                 placeholder="order_confirmation"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e) => {
+                  // Auto-slug: lowercase + spaces → underscores.
+                  // Meta only accepts [a-z0-9_], so we transform on
+                  // every keystroke to prevent submission errors.
+                  const slugged = e.target.value
+                    .toLowerCase()
+                    .replace(/\s+/g, "_");
+                  setForm({ ...form, name: slugged });
+                }}
                 className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
               />
               <p className="text-[11px] text-muted-foreground">
