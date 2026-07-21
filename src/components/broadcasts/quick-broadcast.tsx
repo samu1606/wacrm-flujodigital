@@ -17,6 +17,7 @@ import { Radio, Send, X, Users, Loader2, MessageSquare, ChevronDown } from 'luci
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectSeparator,
   SelectTrigger,
@@ -264,25 +265,31 @@ export function QuickBroadcast({ open, onClose, onSent }: QuickBroadcastProps) {
                 <SelectContent className="min-w-[280px]">
                   {userTemplates.length > 0 && (
                     <>
-                      <SelectLabel className="text-[10px] text-muted-foreground">
-                        Tus plantillas
-                      </SelectLabel>
-                      {userTemplates.map(tpl => (
-                        <SelectItem key={tpl.value} value={tpl.value} className="text-sm">
-                          {tpl.label}
-                        </SelectItem>
-                      ))}
+                      <SelectGroup>
+                        <SelectLabel className="text-[10px] text-muted-foreground">
+                          Tus plantillas
+                        </SelectLabel>
+                        {userTemplates.map(tpl => (
+                          <SelectItem key={tpl.value} value={tpl.value} className="text-sm">
+                            {tpl.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                       <SelectSeparator />
+                    </>
+                  )}
+                  <SelectGroup>
+                    {userTemplates.length > 0 && (
                       <SelectLabel className="text-[10px] text-muted-foreground">
                         Plantillas predefinidas
                       </SelectLabel>
-                    </>
-                  )}
-                  {DEFAULT_TEMPLATES.map(tpl => (
-                    <SelectItem key={tpl.value} value={tpl.value} className="text-sm">
-                      {tpl.label}
-                    </SelectItem>
-                  ))}
+                    )}
+                    {DEFAULT_TEMPLATES.map(tpl => (
+                      <SelectItem key={tpl.value} value={tpl.value} className="text-sm">
+                        {tpl.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
