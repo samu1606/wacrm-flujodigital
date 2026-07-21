@@ -70,7 +70,7 @@ export async function loadAiConfig(
   }
 
   return {
-    provider: row.provider,
+    provider: row.provider as AiConfig['provider'],
     model: row.model,
     apiKey: decrypt(row.api_key),
     systemPrompt: row.system_prompt,
