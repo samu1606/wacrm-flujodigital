@@ -22,6 +22,10 @@ export const templateStatusConfig: Record<
     label: 'Draft',
     classes: 'bg-slate-600/20 text-muted-foreground border-slate-600/30',
   },
+  local: {
+    label: 'Local',
+    classes: 'bg-emerald-600/20 text-emerald-400 border-emerald-600/30',
+  },
   PENDING: {
     label: 'Pending',
     classes: 'bg-yellow-600/20 text-yellow-400 border-yellow-600/30',
