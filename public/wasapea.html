@@ -1,507 +1,2935 @@
 <!DOCTYPE html>
-<html lang="es" class="dark scroll-smooth">
+<html lang="es" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WASAPEA PRO — CRM SaaS para vender por WhatsApp en LATAM</title>
   <meta name="description" content="Convierte tu WhatsApp en una máquina de ventas. Sin Meta Cloud API, sin trámites. Conecta en 30s con un QR.">
+  
+  <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              green: '#00C853',
-              'green-light': '#00E676',
-              'green-neon': '#00FF87',
-              navy: '#0B132B',
-              'navy-light': '#1C2541',
-              dark: '#090D16',
-              surface: '#131B2E',
-              amber: '#FF6B00',
-              cyan: '#00F5D4',
-            }
-          },
-          fontFamily: {
-            display: ['Space Grotesk', 'Outfit', 'sans-serif'],
-            ui: ['Plus Jakarta Sans', 'sans-serif'],
-            sans: ['Inter', 'sans-serif'],
-          },
-          boxShadow: {
-            'glow-green': '0 0 25px -5px rgba(0, 230, 118, 0.4)',
-            'glow-amber': '0 0 25px -5px rgba(255, 107, 0, 0.4)',
-          }
-        }
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* CSS CUSTOM PROPERTIES (DESIGN TOKENS) */
+    :root {
+      --bg-base: #0a0b0f;
+      --bg-surface: #111118;
+      --bg-surface-card: rgba(17, 17, 24, 0.75);
+      --bg-surface-light: #1c1c28;
+      --accent-primary: #25D366; /* WhatsApp Green */
+      --accent-primary-hover: #1ebd5b;
+      --accent-secondary: #8B5CF6; /* Purple sutil */
+      --accent-orange: #FF6B00; /* Orange details */
+      --accent-orange-hover: #e05e00;
+      --text-white: #F8FAFC;
+      --text-gray: #94A3B8;
+      --text-muted: #64748B;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-color-hover: rgba(37, 211, 102, 0.35);
+      
+      --shadow-glow-green: 0 0 25px -5px rgba(37, 211, 102, 0.25);
+      --shadow-glow-purple: 0 0 25px -5px rgba(139, 92, 246, 0.25);
+      --shadow-glow-orange: 0 0 25px -5px rgba(255, 107, 0, 0.25);
+      
+      --font-sans: 'Inter', sans-serif;
+      --transition-default: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* CSS RESET & GENERAL STYLES */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-white);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+      transition: var(--transition-default);
+    }
+
+    button, input, select, textarea {
+      font-family: inherit;
+      color: inherit;
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-base);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1c2541;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-primary);
+    }
+
+    /* CONTAINERS & COMMON STYLES */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      color: #c084fc;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-orange {
+      background: rgba(255, 107, 0, 0.1);
+      border: 1px solid rgba(255, 107, 0, 0.25);
+      color: var(--accent-orange);
+    }
+
+    .badge-green {
+      background: rgba(37, 211, 102, 0.1);
+      border: 1px solid rgba(37, 211, 102, 0.25);
+      color: var(--accent-primary);
+    }
+
+    .section-title-wrapper {
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto 64px auto;
+    }
+
+    .section-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-top: 16px;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    @media (min-width: 768px) {
+      .section-title {
+        font-size: 44px;
       }
     }
-  </script>
-  <style>
-    body { background: #090D16; color: #F8FAFC; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-    .glass-card { background: rgba(19, 27, 46, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
-    .glass-card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .glass-card-hover:hover { border-color: rgba(0, 230, 118, 0.4); box-shadow: 0 0 25px -5px rgba(0, 230, 118, 0.25); transform: translateY(-2px); }
-    html { scroll-behavior: smooth; }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #090D16; }
-    ::-webkit-scrollbar-thumb { background: #1C2541; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #00E676; }
+
+    .section-subtitle {
+      color: var(--text-gray);
+      font-size: 16px;
+    }
+
+    .glass-card {
+      background: var(--bg-surface-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      transition: var(--transition-default);
+    }
+
+    .glass-card:hover {
+      border-color: var(--border-color-hover);
+      box-shadow: var(--shadow-glow-green);
+      transform: translateY(-2px);
+    }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 16px;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: var(--transition-default);
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-orange), #ff8833);
+      color: white;
+      box-shadow: var(--shadow-glow-orange);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #ff8833, var(--accent-orange));
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(255, 107, 0, 0.4);
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface-light);
+      border: 1px solid var(--border-color);
+      color: var(--text-white);
+    }
+
+    .btn-secondary:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateY(-2px);
+    }
+
+    .btn-accent {
+      background: linear-gradient(135deg, var(--accent-primary), #34d399);
+      color: #030712;
+      box-shadow: var(--shadow-glow-green);
+    }
+
+    .btn-accent:hover {
+      background: linear-gradient(135deg, #34d399, var(--accent-primary));
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(37, 211, 102, 0.4);
+    }
+
+    /* NAVBAR */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(10, 11, 15, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 0;
+    }
+
+    .navbar-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+    }
+
+    .logo svg {
+      transition: transform 0.3s ease;
+    }
+
+    .logo:hover svg {
+      transform: scale(1.05);
+    }
+
+    .logo-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--accent-orange), #ffa600);
+      box-shadow: var(--shadow-glow-orange);
+      color: white;
+      letter-spacing: 0.05em;
+    }
+
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .nav-link {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-gray);
+    }
+
+    .nav-link:hover {
+      color: var(--accent-primary);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-btn-dashboard {
+      padding: 8px 16px;
+      font-size: 13px;
+      border-radius: 12px;
+      border: 1px solid rgba(37, 211, 102, 0.3);
+      color: var(--accent-primary);
+      font-weight: 600;
+    }
+
+    .nav-btn-dashboard:hover {
+      background: rgba(37, 211, 102, 0.08);
+    }
+
+    .nav-btn-cta {
+      padding: 9px 18px;
+      font-size: 13px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent-orange), #ff8833);
+      color: white;
+      font-weight: 700;
+      box-shadow: var(--shadow-glow-orange);
+    }
+
+    .nav-btn-cta:hover {
+      transform: translateY(-1px);
+    }
+
+    .hamburger-btn {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      z-index: 101;
+    }
+
+    .hamburger-line {
+      width: 24px;
+      height: 2px;
+      background-color: var(--text-white);
+      transition: var(--transition-default);
+    }
+
+    /* Mobile Nav Overlay styling */
+    @media (max-width: 768px) {
+      .hamburger-btn {
+        display: flex;
+      }
+
+      .nav-menu {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        height: 100vh;
+        width: 280px;
+        background: var(--bg-surface);
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        padding: 100px 32px 32px 32px;
+        gap: 24px;
+        transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        z-index: 99;
+      }
+
+      .nav-menu.active {
+        right: 0;
+      }
+
+      .nav-actions {
+        flex-direction: column;
+        width: 100%;
+        margin-top: 16px;
+        gap: 16px;
+      }
+
+      .nav-actions a {
+        width: 100%;
+        text-align: center;
+      }
+
+      .hamburger-btn.active .hamburger-line:nth-child(1) {
+        transform: translateY(8px) rotate(45deg);
+      }
+      .hamburger-btn.active .hamburger-line:nth-child(2) {
+        opacity: 0;
+      }
+      .hamburger-btn.active .hamburger-line:nth-child(3) {
+        transform: translateY(-8px) rotate(-45deg);
+      }
+    }
+
+    /* HERO SECTION */
+    .hero {
+      position: relative;
+      padding-top: 140px;
+      padding-bottom: 80px;
+      overflow: hidden;
+    }
+
+    .hero-glow-1 {
+      position: absolute;
+      top: 10%;
+      left: 50%;
+      transform: translate(-50%, -55%);
+      width: 600px;
+      height: 600px;
+      background: rgba(37, 211, 102, 0.08);
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hero-glow-2 {
+      position: absolute;
+      top: 25%;
+      right: 5%;
+      width: 400px;
+      height: 400px;
+      background: rgba(139, 92, 246, 0.06);
+      border-radius: 50%;
+      filter: blur(100px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .hero-badge-container {
+      margin-bottom: 24px;
+    }
+
+    .hero-title {
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+    }
+
+    .hero-title span {
+      background: linear-gradient(135deg, var(--accent-primary), #34d399, #059669);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    @media (min-width: 768px) {
+      .hero-title {
+        font-size: 64px;
+      }
+    }
+
+    .hero-desc {
+      font-size: 16px;
+      color: var(--text-gray);
+      margin-bottom: 38px;
+      max-width: 750px;
+      margin-inline: auto;
+      line-height: 1.7;
+    }
+
+    .hero-desc strong {
+      color: var(--text-white);
+    }
+
+    .hero-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 48px;
+    }
+
+    @media (min-width: 576px) {
+      .hero-buttons {
+        flex-direction: row;
+      }
+    }
+
+    .hero-trust-badges {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 24px;
+      color: var(--text-gray);
+      font-size: 14px;
+      margin-bottom: 64px;
+    }
+
+    .hero-trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hero-trust-badge i {
+      color: var(--accent-primary);
+      font-size: 16px;
+    }
+
+    /* MOCKUP: SIMULATED WHATSAPP CRM INBOX */
+    .inbox-mockup-wrapper {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 0 12px;
+      position: relative;
+      z-index: 20;
+    }
+
+    .inbox-mockup {
+      width: 100%;
+      height: 520px;
+      background: #07070a;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      box-shadow: 0 30px 60px -15px rgba(0,0,0,0.8), 0 0 50px -10px rgba(139, 92, 246, 0.15);
+      display: grid;
+      grid-template-columns: 50px 220px 1fr 230px;
+      overflow: hidden;
+      font-size: 12px;
+      text-align: left;
+    }
+
+    /* Columns responsive apilado vertical o simplificado */
+    @media (max-width: 992px) {
+      .inbox-mockup {
+        grid-template-columns: 50px 1fr;
+      }
+      .inbox-mockup-sidebar-contacts,
+      .inbox-mockup-details {
+        display: none;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .inbox-mockup {
+        grid-template-columns: 1fr;
+        height: 420px;
+      }
+      .inbox-mockup-sidebar-nav {
+        display: none;
+      }
+    }
+
+    /* Column 1: Sidebar Nav */
+    .inbox-mockup-sidebar-nav {
+      background: #0f1016;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 0;
+      justify-content: space-between;
+    }
+
+    .inbox-nav-top {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      align-items: center;
+      width: 100%;
+    }
+
+    .inbox-nav-logo {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent-primary), #059669);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .inbox-nav-item {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition-default);
+    }
+
+    .inbox-nav-item:hover, .inbox-nav-item.active {
+      color: var(--accent-primary);
+      background: rgba(37, 211, 102, 0.08);
+    }
+
+    .inbox-nav-item.active {
+      color: #a78bfa;
+      background: rgba(139, 92, 246, 0.12);
+    }
+
+    .inbox-nav-user {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 10px;
+      color: white;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* Column 2: Sidebar Contacts */
+    .inbox-mockup-sidebar-contacts {
+      background: #11121a;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .inbox-search-box {
+      padding: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .inbox-search-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .inbox-search-input-wrapper i {
+      position: absolute;
+      left: 10px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .inbox-search-input {
+      width: 100%;
+      background: #0a0b0f;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 6px 12px 6px 28px;
+      font-size: 11px;
+      color: var(--text-white);
+      outline: none;
+    }
+
+    .inbox-contacts-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .inbox-contact-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+      cursor: pointer;
+      transition: var(--transition-default);
+    }
+
+    .inbox-contact-card:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .inbox-contact-card.active {
+      background: rgba(139, 92, 246, 0.08);
+      border-left: 2px solid var(--accent-secondary);
+    }
+
+    .inbox-contact-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: var(--text-white);
+      font-size: 11px;
+      position: relative;
+    }
+
+    .inbox-contact-avatar.has-unreads::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 8px;
+      height: 8px;
+      background: var(--accent-primary);
+      border-radius: 50%;
+      border: 2px solid #11121a;
+    }
+
+    .inbox-contact-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .inbox-contact-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+
+    .inbox-contact-name {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .inbox-contact-time {
+      font-size: 9px;
+      color: var(--text-muted);
+    }
+
+    .inbox-contact-msg {
+      font-size: 10px;
+      color: var(--text-gray);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .inbox-unread-badge {
+      background: var(--accent-secondary);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 10px;
+    }
+
+    /* Column 3: Active Chat */
+    .inbox-mockup-chat-area {
+      background: #0b0d13;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Subtle WhatsApp background tile pattern simulation */
+    .inbox-mockup-chat-area::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 0);
+      background-size: 24px 24px;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .inbox-chat-header {
+      background: #11121a;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 5;
+    }
+
+    .inbox-chat-user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .inbox-chat-user-text h4 {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .inbox-chat-user-text p {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .inbox-chat-badges {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .inbox-chat-badge-time {
+      font-size: 10px;
+      padding: 2px 8px;
+      background: rgba(139, 92, 246, 0.15);
+      color: #c084fc;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .inbox-chat-assign {
+      font-size: 10px;
+      color: var(--text-gray);
+      background: rgba(255,255,255,0.05);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .inbox-chat-messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 5;
+    }
+
+    .inbox-msg-bubble {
+      max-width: 80%;
+      padding: 8px 12px;
+      border-radius: 12px;
+      position: relative;
+      line-height: 1.4;
+      font-size: 11px;
+    }
+
+    .inbox-msg-bubble.received {
+      background: #1e1f29;
+      color: var(--text-white);
+      align-self: flex-start;
+      border-top-left-radius: 2px;
+    }
+
+    .inbox-msg-bubble.sent {
+      background: var(--accent-primary);
+      color: #070a0e;
+      align-self: flex-end;
+      border-top-right-radius: 2px;
+      font-weight: 500;
+    }
+
+    .inbox-msg-time {
+      display: block;
+      font-size: 8px;
+      text-align: right;
+      margin-top: 4px;
+      opacity: 0.6;
+    }
+
+    /* Simulated Audio Player */
+    .inbox-audio-player {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 160px;
+      padding: 4px 0;
+    }
+
+    .inbox-audio-play-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-white);
+      border: none;
+    }
+
+    .inbox-audio-progress-bar {
+      flex: 1;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      position: relative;
+    }
+
+    .inbox-audio-progress-fill {
+      width: 30%;
+      height: 100%;
+      background: var(--accent-secondary);
+      border-radius: 2px;
+    }
+
+    .inbox-audio-duration {
+      font-size: 9px;
+      color: var(--text-gray);
+    }
+
+    .inbox-chat-input-bar {
+      background: #11121a;
+      padding: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 5;
+    }
+
+    .inbox-chat-input-actions {
+      display: flex;
+      gap: 10px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .inbox-chat-input-actions i {
+      cursor: pointer;
+      transition: var(--transition-default);
+    }
+
+    .inbox-chat-input-actions i:hover {
+      color: var(--text-white);
+    }
+
+    .inbox-chat-input-field {
+      flex: 1;
+      background: #0a0b0f;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: var(--text-white);
+      font-size: 11px;
+      outline: none;
+    }
+
+    .inbox-chat-send-btn {
+      width: 28px;
+      height: 28px;
+      background: var(--accent-secondary);
+      border-radius: 8px;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      cursor: pointer;
+      box-shadow: var(--shadow-glow-purple);
+    }
+
+    /* Column 4: Details Panel */
+    .inbox-mockup-details {
+      background: #101118;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      border-left: 1px solid rgba(255, 255, 255, 0.05);
+      overflow-y: auto;
+    }
+
+    .inbox-details-profile {
+      text-align: center;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .inbox-details-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: var(--accent-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: white;
+      margin: 0 auto 10px auto;
+      box-shadow: var(--shadow-glow-purple);
+    }
+
+    .inbox-details-name {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .inbox-details-phone {
+      color: var(--text-gray);
+      font-size: 10px;
+    }
+
+    .inbox-details-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .inbox-details-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .inbox-details-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .inbox-details-tag {
+      font-size: 9px;
+      padding: 2px 6px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 4px;
+      color: var(--text-gray);
+    }
+
+    /* Deal Card Mockup */
+    .inbox-details-deal-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 10px;
+      position: relative;
+    }
+
+    .inbox-details-deal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .inbox-details-deal-name {
+      font-weight: 600;
+    }
+
+    .inbox-details-deal-badge {
+      font-size: 8px;
+      font-weight: 700;
+      padding: 2px 6px;
+      background: rgba(255, 107, 0, 0.15);
+      color: var(--accent-orange);
+      border-radius: 4px;
+    }
+
+    .inbox-details-deal-val {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-white);
+    }
+
+    .inbox-details-notes-area {
+      width: 100%;
+      height: 60px;
+      background: #0a0b0f;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 10px;
+      color: var(--text-white);
+      resize: none;
+      outline: none;
+    }
+
+    /* EARLY ACCESS SECTION */
+    .waitlist {
+      padding: 100px 0;
+      position: relative;
+    }
+
+    .waitlist-gradient {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(255, 107, 0, 0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .waitlist-wrapper {
+      max-width: 650px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 10;
+    }
+
+    .waitlist-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .waitlist-header h2 {
+      font-size: 30px;
+      font-weight: 800;
+      margin-top: 16px;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .waitlist-header h2 span {
+      color: var(--accent-orange);
+    }
+
+    .waitlist-header p {
+      color: var(--text-gray);
+      font-size: 15px;
+    }
+
+    .waitlist-form-container {
+      background: var(--bg-surface-card);
+      border: 1px solid rgba(255, 107, 0, 0.2);
+      box-shadow: var(--shadow-glow-orange);
+      border-radius: 28px;
+      padding: 40px;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-gray);
+      margin-bottom: 8px;
+    }
+
+    .form-label span {
+      color: #ef4444;
+    }
+
+    .form-input {
+      width: 100%;
+      background: #0c0d14;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 14px 18px;
+      color: var(--text-white);
+      font-size: 14px;
+      outline: none;
+      transition: var(--transition-default);
+    }
+
+    .form-input:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 15px rgba(37, 211, 102, 0.15);
+    }
+
+    /* Custom Radio Grid for Plans */
+    .plans-radio-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 576px) {
+      .plans-radio-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .plan-radio-label {
+      cursor: pointer;
+    }
+
+    .plan-radio-input {
+      display: none;
+    }
+
+    .plan-radio-card {
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-gray);
+      transition: var(--transition-default);
+      background: rgba(255,255,255,0.01);
+    }
+
+    .plan-radio-card span {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      margin-top: 4px;
+      color: var(--text-muted);
+    }
+
+    .plan-radio-input:checked + .plan-radio-card {
+      border-color: var(--accent-primary);
+      background: rgba(37, 211, 102, 0.06);
+      color: var(--accent-primary);
+    }
+
+    .plan-radio-input:checked + .plan-radio-card span {
+      color: var(--text-white);
+    }
+
+    /* Highlight PRO plan in radio selection */
+    .plan-radio-label-pro .plan-radio-card {
+      border-color: rgba(255, 107, 0, 0.3);
+      color: var(--accent-orange);
+    }
+
+    .plan-radio-label-pro .plan-radio-input:checked + .plan-radio-card {
+      border-color: var(--accent-orange);
+      background: rgba(255, 107, 0, 0.08);
+      color: var(--accent-orange);
+    }
+
+    .waitlist-submit-btn {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .waitlist-success, .waitlist-error {
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    .waitlist-success h3 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .waitlist-success p {
+      color: var(--text-gray);
+      font-size: 14px;
+    }
+
+    .waitlist-success .success-sub {
+      color: var(--accent-primary);
+      font-weight: 600;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .form-footer-note {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    /* "CÓMO FUNCIONA" SECTION */
+    .how-it-works {
+      padding: 100px 0;
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+      margin-top: 64px;
+    }
+
+    @media (min-width: 768px) {
+      .steps-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .step-card {
+      padding: 40px 32px;
+      border-radius: 28px;
+    }
+
+    .step-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .step-number {
+      font-size: 38px;
+      font-weight: 800;
+      color: rgba(255, 255, 255, 0.08);
+      line-height: 1;
+      transition: var(--transition-default);
+    }
+
+    .step-card:hover .step-number {
+      color: var(--accent-secondary);
+    }
+
+    .step-badge {
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text-gray);
+    }
+
+    .step-icon-box {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, var(--accent-primary), #34d399);
+      color: #0c0d14;
+      box-shadow: 0 8px 20px -6px rgba(37, 211, 102, 0.5);
+    }
+
+    .step-card:nth-child(2) .step-icon-box {
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      box-shadow: 0 8px 20px -6px rgba(59, 130, 246, 0.5);
+    }
+
+    .step-card:nth-child(3) .step-icon-box {
+      background: linear-gradient(135deg, var(--accent-orange), #ff8833);
+      box-shadow: 0 8px 20px -6px rgba(255, 107, 0, 0.5);
+    }
+
+    .step-card h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .step-card p {
+      font-size: 14px;
+      color: var(--text-gray);
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .step-footer-check {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-primary);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* FEATURES GRID SECTION */
+    .features {
+      padding: 100px 0;
+      background: rgba(19, 27, 46, 0.15);
+      border-top: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+
+    @media (min-width: 768px) {
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 992px) {
+      .features-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .feature-card {
+      padding: 32px;
+      border-radius: 28px;
+    }
+
+    .feature-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .feature-icon-wrapper {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: rgba(37, 211, 102, 0.08);
+      border: 1px solid rgba(37, 211, 102, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-primary);
+      font-size: 20px;
+    }
+
+    .feature-card:nth-child(even) .feature-icon-wrapper {
+      background: rgba(139, 92, 246, 0.08);
+      border-color: rgba(139, 92, 246, 0.25);
+      color: var(--accent-secondary);
+    }
+
+    .feature-tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.04);
+      color: var(--text-gray);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .feature-card h3 {
+      font-size: 19px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      color: var(--text-gray);
+      line-height: 1.6;
+    }
+
+    /* PIPELINE KANBAN SECTION */
+    .kanban-section {
+      padding: 100px 0;
+      position: relative;
+    }
+
+    .kanban-section::before {
+      content: '';
+      position: absolute;
+      bottom: 10%;
+      left: 5%;
+      width: 350px;
+      height: 350px;
+      background: rgba(139, 92, 246, 0.05);
+      border-radius: 50%;
+      filter: blur(100px);
+      pointer-events: none;
+    }
+
+    /* Mockup Kanban Board Styling */
+    .kanban-mockup-wrapper {
+      margin-top: 56px;
+      overflow-x: auto;
+      padding-bottom: 20px;
+    }
+
+    .kanban-board {
+      display: grid;
+      grid-template-columns: repeat(5, 230px);
+      gap: 16px;
+      min-width: 1200px;
+      text-align: left;
+    }
+
+    .kanban-column {
+      background: #11121a;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 320px;
+    }
+
+    .kanban-column-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      margin-bottom: 4px;
+    }
+
+    .kanban-column-title {
+      font-weight: 700;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Kanban Colors */
+    .kanban-col-1 .kanban-column-title { color: #3b82f6; }
+    .kanban-col-2 .kanban-column-title { color: #eab308; }
+    .kanban-col-3 .kanban-column-title { color: var(--accent-orange); }
+    .kanban-col-4 .kanban-column-title { color: var(--accent-secondary); }
+    .kanban-col-5 .kanban-column-title { color: var(--accent-primary); }
+
+    .kanban-column-value {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .kanban-column-count {
+      font-size: 9px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1px 6px;
+      border-radius: 8px;
+      color: var(--text-gray);
+      margin-left: 4px;
+    }
+
+    .kanban-card {
+      background: #181924;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: var(--transition-default);
+    }
+
+    .kanban-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    .kanban-card-title {
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-white);
+    }
+
+    .kanban-card-contact {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: var(--text-gray);
+    }
+
+    .kanban-card-contact-avatar {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent-secondary);
+      color: white;
+      font-size: 8px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .kanban-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 8px;
+      margin-top: 4px;
+    }
+
+    .kanban-card-price {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-primary);
+    }
+
+    .kanban-card-price-usd {
+      color: #38bdf8;
+    }
+
+    .kanban-card-date {
+      font-size: 9px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Dashed placeholder dropzone */
+    .kanban-dropzone {
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 24px 12px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .kanban-dropzone i {
+      font-size: 14px;
+      opacity: 0.6;
+    }
+
+    .kanban-add-btn {
+      width: 100%;
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 6px 12px;
+      color: var(--text-gray);
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: var(--transition-default);
+    }
+
+    .kanban-add-btn:hover {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: var(--text-white);
+    }
+
+    /* PRICING SECTION */
+    .pricing {
+      padding: 100px 0;
+      position: relative;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+      align-items: stretch;
+      margin-top: 64px;
+    }
+
+    @media (min-width: 992px) {
+      .pricing-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .pricing-card {
+      padding: 40px 32px;
+      border-radius: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .pricing-popular-badge {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent-orange);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 16px;
+      border-radius: 9999px;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pricing-card-pro {
+      border: 2px solid var(--accent-orange) !important;
+      box-shadow: var(--shadow-glow-orange);
+    }
+
+    @media (min-width: 992px) {
+      .pricing-card-pro {
+        transform: scale(1.04);
+        z-index: 10;
+      }
+      .pricing-card-pro:hover {
+        transform: scale(1.05) translateY(-2px);
+      }
+    }
+
+    .pricing-card-header {
+      margin-bottom: 24px;
+    }
+
+    .pricing-card-header h3 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .pricing-card-header p {
+      font-size: 13px;
+      color: var(--text-gray);
+      min-height: 40px;
+    }
+
+    .pricing-price-box {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .pricing-currency {
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--text-gray);
+    }
+
+    .pricing-amount {
+      font-size: 40px;
+      font-weight: 800;
+      color: var(--text-white);
+      letter-spacing: -0.02em;
+    }
+
+    .pricing-period {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .pricing-features-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 40px;
+    }
+
+    .pricing-feature-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--text-gray);
+    }
+
+    .pricing-feature-item i {
+      color: var(--accent-primary);
+      font-size: 12px;
+    }
+
+    .pricing-btn {
+      width: 100%;
+      text-align: center;
+    }
+
+    /* TESTIMONIALS SECTION */
+    .testimonials {
+      padding: 100px 0;
+      background: rgba(19, 27, 46, 0.15);
+      border-top: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+      margin-top: 64px;
+    }
+
+    @media (min-width: 768px) {
+      .testimonials-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .testimonial-card {
+      padding: 40px 32px;
+      border-radius: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .testimonial-user {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .testimonial-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-secondary), #ec4899);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: white;
+      font-size: 14px;
+    }
+
+    .testimonial-card:nth-child(2) .testimonial-avatar {
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+    }
+
+    .testimonial-card:nth-child(3) .testimonial-avatar {
+      background: linear-gradient(135deg, var(--accent-orange), #eab308);
+    }
+
+    .testimonial-user-info h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-white);
+    }
+
+    .testimonial-user-info p {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .testimonial-text {
+      font-size: 14px;
+      color: var(--text-gray);
+      line-height: 1.6;
+      font-style: italic;
+      margin-bottom: 24px;
+    }
+
+    .testimonial-stars {
+      display: flex;
+      gap: 4px;
+      color: #fbbf24;
+      font-size: 12px;
+    }
+
+    /* FAQ ACCORDION SECTION */
+    .faq {
+      padding: 100px 0;
+    }
+
+    .faq-wrapper {
+      max-width: 800px;
+      margin: 64px auto 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .faq-item {
+      background: var(--bg-surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: var(--transition-default);
+    }
+
+    .faq-item:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .faq-item[open] {
+      border-color: var(--border-color-hover);
+      box-shadow: var(--shadow-glow-green);
+    }
+
+    .faq-summary {
+      padding: 24px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+      list-style: none;
+    }
+
+    /* Hide default summary arrow */
+    .faq-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .faq-toggle-icon {
+      font-size: 18px;
+      color: var(--accent-primary);
+      font-weight: 600;
+      transition: transform 0.3s ease;
+    }
+
+    .faq-item[open] .faq-toggle-icon {
+      transform: rotate(45deg);
+      color: var(--accent-secondary);
+    }
+
+    .faq-content {
+      padding: 0 24px 24px 24px;
+      font-size: 14px;
+      color: var(--text-gray);
+      line-height: 1.6;
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      padding-top: 16px;
+    }
+
+    /* FOOTER */
+    .footer {
+      padding: 80px 0 40px 0;
+      border-top: 1px solid var(--border-color);
+      background: #07080c;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 48px;
+      margin-bottom: 64px;
+    }
+
+    @media (min-width: 768px) {
+      .footer-grid {
+        grid-template-columns: 2fr repeat(3, 1fr);
+      }
+    }
+
+    .footer-brand {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .footer-brand .logo {
+      font-size: 22px;
+    }
+
+    .footer-brand p {
+      color: var(--text-gray);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .footer-col h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-white);
+      margin-bottom: 24px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .footer-link {
+      font-size: 14px;
+      color: var(--text-gray);
+    }
+
+    .footer-link:hover {
+      color: var(--accent-primary);
+    }
+
+    .footer-contact-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--text-gray);
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 32px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
   </style>
 </head>
-<body class="bg-[#090D16] text-slate-100 antialiased">
+<body>
 
-<!-- NAVBAR -->
-<nav class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/10 py-3.5 px-4 lg:px-8">
-  <div class="max-w-7xl mx-auto flex items-center justify-between">
-    <a href="#hero" class="flex items-center gap-3 select-none">
-      <svg height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-transform duration-300 hover:scale-105">
-        <defs>
-          <linearGradient id="lg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-            <stop stop-color="#00FF87"/><stop offset="1" stop-color="#00C853"/>
-          </linearGradient>
-          <filter id="gl" x="-2" y="0" width="68" height="68"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#00E676" flood-opacity="0.4"/></filter>
-        </defs>
-        <g filter="url(#gl)"><path d="M32 6C17.642 6 6 17.642 6 32C6 37.076 7.458 41.812 9.98 45.823L7.147 55.715C6.73 57.172 8.077 58.519 9.534 58.102L19.426 55.269C23.437 57.791 28.173 59.25 33.25 59.25C47.608 59.25 59.25 47.608 59.25 33.25C59.25 18.892 47.608 6 32 6Z" fill="url(#lg)"/><path d="M20 22L26 40L31 29L36 40L42 22" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></g>
-      </svg>
-      <span class="font-display font-extrabold text-xl tracking-tight text-white">WASAPEA</span>
-      <span class="px-2 py-0.5 rounded-md font-display font-extrabold text-white text-xs bg-gradient-to-r from-[#FF6B00] to-amber-500 tracking-wider shadow-glow-amber">PRO</span>
-    </a>
-    <div class="hidden md:flex items-center gap-8 text-sm font-ui text-slate-300 font-medium">
-      <a href="#como-funciona" class="hover:text-[#00E676] transition-colors">Cómo Funciona</a>
-      <a href="#funciones" class="hover:text-[#00E676] transition-colors">Funciones</a>
-      <a href="#precios" class="hover:text-[#00E676] transition-colors">Precios</a>
-      <a href="#faq" class="hover:text-[#00E676] transition-colors">FAQ</a>
-    </div>
-    <div class="hidden md:flex items-center gap-3">
-      <a href="https://wasapeapro.com/login" class="px-4 py-2 text-sm font-ui font-semibold text-[#00E676] border border-[#00E676]/40 rounded-xl hover:bg-[#00E676]/10 transition-all">🔐 Dashboard</a>
-      <a href="#precios" class="px-5 py-2.5 text-sm font-ui font-bold text-white bg-gradient-to-r from-[#FF6B00] to-amber-500 hover:from-amber-500 hover:to-[#FF6B00] rounded-xl shadow-glow-amber transition-all transform hover:-translate-y-0.5">Ver Planes →</a>
-    </div>
-  </div>
-</nav>
-
-<!-- HERO -->
-<section id="hero" class="relative pt-32 pb-20 px-4 lg:px-8 overflow-hidden">
-  <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#00C853]/15 rounded-full blur-[140px] pointer-events-none"></div>
-  <div class="absolute top-1/3 right-10 w-[400px] h-[400px] bg-[#FF6B00]/10 rounded-full blur-[120px] pointer-events-none"></div>
-  <div class="max-w-7xl mx-auto text-center relative z-10">
-    <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full glass-card border-[#00E676]/30 mb-8 animate-pulse">
-      <span class="text-[#00E676]">✦</span>
-      <span class="text-xs font-ui font-semibold text-slate-200 uppercase tracking-wider">Tu WhatsApp Profesional • Wasapea. Vende. Crece.</span>
-    </div>
-    <h1 class="text-4xl sm:text-6xl lg:text-7xl font-display font-extrabold text-white tracking-tight leading-[1.1] mb-6 max-w-5xl mx-auto">
-      Convierte tu WhatsApp en una <span class="bg-gradient-to-r from-[#00FF87] via-[#00E676] to-emerald-400 bg-clip-text text-transparent">máquina de ventas.</span>
-    </h1>
-    <p class="text-lg sm:text-xl text-slate-300 font-sans max-w-3xl mx-auto mb-10 leading-relaxed">
-      El CRM SaaS para negocios en Latinoamérica que cierran ventas por WhatsApp. <strong class="text-white font-semibold">Sin Meta Cloud API ni trámites</strong>. Escaneas un código QR y en 30 segundos reúnes a todo tu equipo en un solo inbox con embudo Kanban.
-    </p>
-    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-      <a href="#precios" class="w-full sm:w-auto px-8 py-4 text-base font-ui font-bold text-white bg-gradient-to-r from-[#FF6B00] to-amber-500 hover:from-amber-500 hover:to-[#FF6B00] rounded-2xl shadow-glow-amber transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3">
-        🔥 Ver Planes y Precios <span>→</span>
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container navbar-container">
+      <a href="#hero" class="logo">
+        <svg height="34" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#00FF87"/><stop offset="1" stop-color="#00C853"/>
+            </linearGradient>
+            <filter id="gl" x="-2" y="0" width="68" height="68"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#00E676" flood-opacity="0.4"/></filter>
+          </defs>
+          <g filter="url(#gl)">
+            <path d="M32 6C17.642 6 6 17.642 6 32C6 37.076 7.458 41.812 9.98 45.823L7.147 55.715C6.73 57.172 8.077 58.519 9.534 58.102L19.426 55.269C23.437 57.791 28.173 59.25 33.25 59.25C47.608 59.25 59.25 47.608 59.25 33.25C59.25 18.892 47.608 6 32 6Z" fill="url(#lg)"/>
+            <path d="M20 22L26 40L31 29L36 40L42 22" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+        </svg>
+        <span>WASAPEA</span> <span class="logo-badge">PRO</span>
       </a>
-      <a href="#como-funciona" class="w-full sm:w-auto px-8 py-4 text-base font-ui font-semibold text-slate-200 glass-card glass-card-hover rounded-2xl flex items-center justify-center gap-3">
-        ▶ Cómo Funciona
-      </a>
-    </div>
-    <div class="flex flex-wrap items-center justify-center gap-6 text-xs sm:text-sm font-ui text-slate-400 mb-16">
-      <span>✅ Sin tarjeta de crédito</span>
-      <span>🛡️ Cero verificaciones de Facebook</span>
-      <span>⚡ Conexión en 30s</span>
-    </div>
-  </div>
-</section>
-
-<!-- WAITLIST CAPTURE -->
-<section id="waitlist" class="py-24 px-4 lg:px-8 relative">
-  <div class="absolute inset-0 bg-gradient-to-b from-[#FF6B00]/5 to-transparent pointer-events-none"></div>
-  <div class="max-w-2xl mx-auto relative z-10">
-    <div class="text-center mb-10">
-      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FF6B00]/20 border border-[#FF6B00]/40 mb-6">
-        <span class="text-xs font-ui font-bold text-[#FF6B00] uppercase tracking-wider">🔥 Early Access — Cupos Limitados</span>
+      
+      <div class="nav-menu" id="nav-menu">
+        <a href="#como-funciona" class="nav-link">Cómo Funciona</a>
+        <a href="#funciones" class="nav-link">Funciones</a>
+        <a href="#precios" class="nav-link">Precios</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+        
+        <div class="nav-actions">
+          <a href="https://wasapeapro.com/login" class="nav-btn-dashboard">🔐 Dashboard</a>
+          <a href="#precios" class="nav-btn-cta">Ver Planes →</a>
+        </div>
       </div>
-      <h2 class="text-3xl sm:text-4xl font-display font-extrabold text-white tracking-tight mb-4">
-        Los primeros 100 negocios obtienen <span class="text-[#FF6B00]">50% OFF de por vida</span> en Plan PRO
-      </h2>
-      <p class="text-slate-300">Reserva tu lugar. Sin tarjeta. Sin compromiso. Solo tu email.</p>
+
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle Menu">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section id="hero" class="hero">
+    <div class="hero-glow-1"></div>
+    <div class="hero-glow-2"></div>
+    
+    <div class="container hero-content">
+      <div class="hero-badge-container">
+        <span class="badge badge-green">✦ Tu WhatsApp Profesional • Wasapea. Vende. Crece.</span>
+      </div>
+      
+      <h1 class="hero-title">
+        Convierte tu WhatsApp en una <span>máquina de ventas.</span>
+      </h1>
+      
+      <p class="hero-desc">
+        El CRM SaaS para negocios en Latinoamérica que cierran ventas por WhatsApp. <strong>Sin Meta Cloud API ni trámites</strong>. Escaneas un código QR y en 30 segundos reúnes a todo tu equipo en un solo inbox con embudo Kanban.
+      </p>
+      
+      <div class="hero-buttons">
+        <a href="#precios" class="btn btn-primary">🔥 Ver Planes y Precios →</a>
+        <a href="#como-funciona" class="btn btn-secondary">▶ Cómo Funciona</a>
+      </div>
+      
+      <div class="hero-trust-badges">
+        <div class="hero-trust-badge">
+          <i data-lucide="shield-check"></i>
+          <span>Sin tarjeta de crédito</span>
+        </div>
+        <div class="hero-trust-badge">
+          <i data-lucide="badge-check"></i>
+          <span>Cero verificaciones de Facebook</span>
+        </div>
+        <div class="hero-trust-badge">
+          <i data-lucide="zap"></i>
+          <span>Conexión en 30s</span>
+        </div>
+      </div>
     </div>
 
-    <div class="glass-card p-8 rounded-3xl border border-[#FF6B00]/30 shadow-glow-amber">
-      <form id="waitlist-form" class="space-y-5">
-        <div>
-          <label class="block text-sm font-ui font-semibold text-slate-300 mb-2">Nombre</label>
-          <input type="text" id="wl-name" placeholder="María Gómez"
-            class="w-full px-4 py-3.5 bg-[#0B132B] border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]/30 transition-all text-sm">
+    <!-- SIMULATED CRM INBOX MOCKUP -->
+    <div class="inbox-mockup-wrapper">
+      <div class="inbox-mockup">
+        
+        <!-- Column 1: Navigation Sidebar -->
+        <div class="inbox-mockup-sidebar-nav">
+          <div class="inbox-nav-top">
+            <div class="inbox-nav-logo">W</div>
+            <div class="inbox-nav-item"><i data-lucide="layout-dashboard"></i></div>
+            <div class="inbox-nav-item active"><i data-lucide="message-square"></i></div>
+            <div class="inbox-nav-item"><i data-lucide="bell"></i></div>
+            <div class="inbox-nav-item"><i data-lucide="users"></i></div>
+            <div class="inbox-nav-item"><i data-lucide="columns-3"></i></div>
+            <div class="inbox-nav-item"><i data-lucide="send"></i></div>
+            <div class="inbox-nav-item"><i data-lucide="bot"></i></div>
+          </div>
+          <div class="inbox-nav-user">EQ</div>
         </div>
-        <div>
-          <label class="block text-sm font-ui font-semibold text-slate-300 mb-2">Email <span class="text-red-400">*</span></label>
-          <input type="email" id="wl-email" required placeholder="maria@negocio.com"
-            class="w-full px-4 py-3.5 bg-[#0B132B] border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]/30 transition-all text-sm">
-        </div>
-        <div>
-          <label class="block text-sm font-ui font-semibold text-slate-300 mb-3">Me interesa el plan:</label>
-          <div class="grid grid-cols-3 gap-3">
-            <label class="cursor-pointer">
-              <input type="radio" name="plan" value="emprendedor" class="peer hidden">
-              <div class="p-3 rounded-xl border border-white/10 text-center peer-checked:border-[#00E676] peer-checked:bg-[#00E676]/10 peer-checked:text-[#00E676] text-slate-400 text-sm font-ui font-semibold transition-all">Emprendedor<br><span class="text-xs font-normal">$15/mes</span></div>
-            </label>
-            <label class="cursor-pointer">
-              <input type="radio" name="plan" value="pro" checked class="peer hidden">
-              <div class="p-3 rounded-xl border border-[#FF6B00]/40 text-center peer-checked:border-[#FF6B00] peer-checked:bg-[#FF6B00]/10 peer-checked:text-[#FF6B00] text-[#FF6B00] text-sm font-ui font-bold transition-all">PRO 🔥<br><span class="text-xs font-normal">$29/mes</span></div>
-            </label>
-            <label class="cursor-pointer">
-              <input type="radio" name="plan" value="business" class="peer hidden">
-              <div class="p-3 rounded-xl border border-white/10 text-center peer-checked:border-[#00E676] peer-checked:bg-[#00E676]/10 peer-checked:text-[#00E676] text-slate-400 text-sm font-ui font-semibold transition-all">Business<br><span class="text-xs font-normal">$69/mes</span></div>
-            </label>
+
+        <!-- Column 2: Contacts Sidebar -->
+        <div class="inbox-mockup-sidebar-contacts">
+          <div class="inbox-search-box">
+            <div class="inbox-search-input-wrapper">
+              <i data-lucide="search"></i>
+              <input type="text" class="inbox-search-input" placeholder="Buscar conversaciones..." readonly>
+            </div>
+          </div>
+          <div class="inbox-contacts-list">
+            
+            <div class="inbox-contact-card active">
+              <div class="inbox-contact-avatar">KM</div>
+              <div class="inbox-contact-info">
+                <div class="inbox-contact-header">
+                  <span class="inbox-contact-name">karol Medina</span>
+                  <span class="inbox-contact-time">15 mins</span>
+                </div>
+                <div class="inbox-contact-msg">
+                  <i data-lucide="mic" style="color: var(--accent-secondary)"></i> [Mensaje de voz]
+                </div>
+              </div>
+            </div>
+
+            <div class="inbox-contact-card">
+              <div class="inbox-contact-avatar">.H</div>
+              <div class="inbox-contact-info">
+                <div class="inbox-contact-header">
+                  <span class="inbox-contact-name">.h</span>
+                  <span class="inbox-contact-time">1 hour</span>
+                </div>
+                <div class="inbox-contact-msg">[audio]</div>
+              </div>
+            </div>
+
+            <div class="inbox-contact-card">
+              <div class="inbox-contact-avatar">AM</div>
+              <div class="inbox-contact-info">
+                <div class="inbox-contact-header">
+                  <span class="inbox-contact-name">Ana Maria Castañeda</span>
+                  <span class="inbox-contact-time">1 hour</span>
+                </div>
+                <div class="inbox-contact-msg">👍</div>
+              </div>
+            </div>
+
+            <div class="inbox-contact-card">
+              <div class="inbox-contact-avatar">VG</div>
+              <div class="inbox-contact-info">
+                <div class="inbox-contact-header">
+                  <span class="inbox-contact-name">Vane G.</span>
+                  <span class="inbox-contact-time">2 hours</span>
+                </div>
+                <div class="inbox-contact-msg">Buena tarde confirmo...</div>
+              </div>
+            </div>
+
+            <div class="inbox-contact-card">
+              <div class="inbox-contact-avatar">AB</div>
+              <div class="inbox-contact-info">
+                <div class="inbox-contact-header">
+                  <span class="inbox-contact-name">Andrés Betancur</span>
+                  <span class="inbox-contact-time">2 hours</span>
+                </div>
+                <div class="inbox-contact-msg">✅ Recibido.</div>
+              </div>
+            </div>
+
           </div>
         </div>
-        <button type="submit" id="wl-submit"
-          class="w-full py-4 rounded-xl font-ui font-bold text-white bg-gradient-to-r from-[#FF6B00] to-amber-500 hover:from-amber-500 hover:to-[#FF6B00] shadow-glow-amber transition-all transform hover:-translate-y-0.5 text-base flex items-center justify-center gap-2">
-          🔥 Quiero mi 50% OFF — Unirme Ahora <span>→</span>
-        </button>
-      </form>
-      <div id="wl-success" class="hidden text-center py-8">
-        <div class="text-5xl mb-4">🎉</div>
-        <h3 class="text-2xl font-display font-bold text-white mb-2">¡Estás dentro!</h3>
-        <p class="text-slate-300 mb-2">Recibirás un email de confirmación en los próximos minutos.</p>
-        <p class="text-xs text-[#00E676] font-ui">Tu 50% OFF de por vida está reservado 🚀</p>
+
+        <!-- Column 3: Active Chat Window -->
+        <div class="inbox-mockup-chat-area">
+          <div class="inbox-chat-header">
+            <div class="inbox-chat-user-info">
+              <div class="inbox-chat-user-text">
+                <h4>karol Medina</h4>
+                <p>+57 304 471 0740</p>
+              </div>
+            </div>
+            <div class="inbox-chat-badges">
+              <span class="inbox-chat-badge-time">24h restantes</span>
+              <span class="inbox-chat-assign">Asignado a: Edwin Q.</span>
+            </div>
+          </div>
+
+          <div class="inbox-chat-messages">
+            
+            <div class="inbox-msg-bubble received">
+              <div class="inbox-audio-player">
+                <button class="inbox-audio-play-btn"><i data-lucide="play"></i></button>
+                <div class="inbox-audio-progress-bar">
+                  <div class="inbox-audio-progress-fill"></div>
+                </div>
+                <span class="inbox-audio-duration">0:13</span>
+              </div>
+              <span class="inbox-msg-time">13:42</span>
+            </div>
+
+            <div class="inbox-msg-bubble received">
+              <div class="inbox-audio-player">
+                <button class="inbox-audio-play-btn"><i data-lucide="play"></i></button>
+                <div class="inbox-audio-progress-bar">
+                  <div class="inbox-audio-progress-fill" style="width: 50%"></div>
+                </div>
+                <span class="inbox-audio-duration">0:06</span>
+              </div>
+              <span class="inbox-msg-time">13:44</span>
+            </div>
+
+            <div class="inbox-msg-bubble received">
+              <div class="inbox-audio-player">
+                <button class="inbox-audio-play-btn"><i data-lucide="play"></i></button>
+                <div class="inbox-audio-progress-bar">
+                  <div class="inbox-audio-progress-fill" style="width: 20%"></div>
+                </div>
+                <span class="inbox-audio-duration">0:02</span>
+              </div>
+              <span class="inbox-msg-time">13:45</span>
+            </div>
+
+            <div class="inbox-msg-bubble received">
+              <p>Mloo miloo</p>
+              <span class="inbox-msg-time">18:58</span>
+            </div>
+
+            <div class="inbox-msg-bubble sent">
+              <p>[tipo: messageContextInfo, secretEncryptedMessage]</p>
+              <span class="inbox-msg-time">18:59</span>
+            </div>
+
+          </div>
+
+          <div class="inbox-chat-input-bar">
+            <div class="inbox-chat-input-actions">
+              <i data-lucide="paperclip"></i>
+              <i data-lucide="smile"></i>
+            </div>
+            <input type="text" class="inbox-chat-input-field" placeholder="Escribe un mensaje..." readonly>
+            <button class="inbox-chat-send-btn"><i data-lucide="send"></i></button>
+          </div>
+        </div>
+
+        <!-- Column 4: Contact Detail Panel -->
+        <div class="inbox-mockup-details">
+          <div class="inbox-details-profile">
+            <div class="inbox-details-avatar">K</div>
+            <h4 class="inbox-details-name">karol Medina</h4>
+            <p class="inbox-details-phone">+57 304 471 0740</p>
+          </div>
+
+          <div class="inbox-details-section">
+            <span class="inbox-details-title">Etiquetas</span>
+            <div class="inbox-details-tags">
+              <span class="inbox-details-tag">Cliente Nuevo</span>
+              <span class="inbox-details-tag">Interesado</span>
+            </div>
+          </div>
+
+          <div class="inbox-details-section">
+            <span class="inbox-details-title">Negocios</span>
+            <div class="inbox-details-deal-card">
+              <div class="inbox-details-deal-header">
+                <span class="inbox-details-deal-name">Bambu</span>
+                <span class="inbox-details-deal-badge">Proposal Sent</span>
+              </div>
+              <span class="inbox-details-deal-val">$1.232.432 COP</span>
+            </div>
+          </div>
+
+          <div class="inbox-details-section">
+            <span class="inbox-details-title">Notas</span>
+            <textarea class="inbox-details-notes-area" placeholder="Agregar nota privada que tu cliente no verá..." readonly></textarea>
+          </div>
+        </div>
+
       </div>
-      <div id="wl-error" class="hidden text-center py-4">
-        <p class="text-red-400 text-sm">Error al guardar. Intenta de nuevo o escríbenos directo.</p>
-      </div>
-      <p class="text-[10px] text-slate-500 text-center mt-4">Sin spam. Solo avisos del lanzamiento y tu descuento.</p>
     </div>
-  </div>
-</section>
+  </section>
 
-<script>
-const API_URL = '/api/waitlist';
+  <!-- WAITLIST CAPTURE -->
+  <section id="waitlist" class="waitlist">
+    <div class="waitlist-gradient"></div>
+    <div class="container waitlist-wrapper">
+      <div class="waitlist-header">
+        <span class="badge badge-orange">🔥 Early Access — Cupos Limitados</span>
+        <h2>Los primeros 100 negocios obtienen <span>50% OFF de por vida</span> en Plan PRO</h2>
+        <p>Reserva tu lugar. Sin tarjeta. Sin compromiso. Solo tu email.</p>
+      </div>
 
-const form = document.getElementById('waitlist-form');
-const submitBtn = document.getElementById('wl-submit');
-const successDiv = document.getElementById('wl-success');
-const errorDiv = document.getElementById('wl-error');
+      <div class="waitlist-form-container">
+        <form id="waitlist-form">
+          <div class="form-group">
+            <label class="form-label" for="wl-name">Nombre</label>
+            <input type="text" id="wl-name" class="form-input" placeholder="María Gómez">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="wl-email">Email <span>*</span></label>
+            <input type="email" id="wl-email" required class="form-input" placeholder="maria@negocio.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Me interesa el plan:</label>
+            <div class="plans-radio-grid">
+              
+              <label class="plan-radio-label">
+                <input type="radio" name="plan" value="emprendedor" class="plan-radio-input">
+                <div class="plan-radio-card">
+                  Emprendedor
+                  <span>$49.900/mes</span>
+                </div>
+              </label>
 
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const name = document.getElementById('wl-name').value.trim();
-  const email = document.getElementById('wl-email').value.trim();
-  const plan = form.plan.value;
-  if (!email) return;
+              <label class="plan-radio-label plan-radio-label-pro">
+                <input type="radio" name="plan" value="pro" checked class="plan-radio-input">
+                <div class="plan-radio-card">
+                  PRO 🔥
+                  <span>$89.900/mes</span>
+                </div>
+              </label>
 
-  submitBtn.disabled = true;
-  submitBtn.innerHTML = '⏳ Guardando...';
-  errorDiv.classList.add('hidden');
+              <label class="plan-radio-label">
+                <input type="radio" name="plan" value="business" class="plan-radio-input">
+                <div class="plan-radio-card">
+                  Business
+                  <span>$199.900/mes</span>
+                </div>
+              </label>
 
-  try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, name: name || null, plan })
+            </div>
+          </div>
+          
+          <button type="submit" id="wl-submit" class="btn btn-primary waitlist-submit-btn">
+            🔥 Quiero mi 50% OFF — Unirme Ahora →
+          </button>
+        </form>
+
+        <div id="wl-success" class="waitlist-success hidden">
+          <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
+          <h3>¡Estás dentro!</h3>
+          <p>Recibirás un email de confirmación en los próximos minutos.</p>
+          <p class="success-sub">Tu 50% OFF de por vida está reservado 🚀</p>
+        </div>
+
+        <div id="wl-error" class="waitlist-error hidden">
+          <p style="color: #f87171; font-size: 14px;">Error al guardar. Intenta de nuevo o escríbenos directo.</p>
+        </div>
+
+        <p class="form-footer-note">Sin spam. Solo avisos del lanzamiento y tu descuento.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="como-funciona" class="how-it-works">
+    <div class="container">
+      <div class="section-title-wrapper">
+        <span class="badge badge-green">Simplicidad Total • En 3 Simples Pasos</span>
+        <h2 class="section-title">Cómo empezar a vender por WhatsApp sin complicaciones</h2>
+      </div>
+
+      <div class="steps-grid">
+        
+        <div class="glass-card step-card">
+          <div class="step-card-header">
+            <span class="step-number">01</span>
+            <span class="step-badge">Cero Burocracia</span>
+          </div>
+          <div class="step-icon-box">
+            <i data-lucide="qr-code"></i>
+          </div>
+          <h3>Escanea el Código QR</h3>
+          <p>Conecta tu WhatsApp en 30 segundos sin verificaciones de Meta Cloud API ni trámites. Sin salir de tu número habitual.</p>
+          <div class="step-footer-check">
+            <i data-lucide="check-circle"></i>
+            <span>Paso 01 listo en segundos</span>
+          </div>
+        </div>
+
+        <div class="glass-card step-card">
+          <div class="step-card-header">
+            <span class="step-number">02</span>
+            <span class="step-badge">Multiagente</span>
+          </div>
+          <div class="step-icon-box">
+            <i data-lucide="users"></i>
+          </div>
+          <h3>Organiza tus Chats</h3>
+          <p>Asigna conversaciones a tu equipo, configura respuestas rápidas y notas internas privadas que el cliente nunca ve.</p>
+          <div class="step-footer-check">
+            <i data-lucide="check-circle"></i>
+            <span>Paso 02 listo en segundos</span>
+          </div>
+        </div>
+
+        <div class="glass-card step-card">
+          <div class="step-card-header">
+            <span class="step-number">03</span>
+            <span class="step-badge">Cierre de Ventas</span>
+          </div>
+          <div class="step-icon-box">
+            <i data-lucide="trending-up"></i>
+          </div>
+          <h3>Vende Más y Automatiza</h3>
+          <p>Mueve prospectos por el embudo Kanban, envía broadcasts masivos y deja que la IA responda 24/7 por ti.</p>
+          <div class="step-footer-check">
+            <i data-lucide="check-circle"></i>
+            <span>Paso 03 listo en segundos</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="funciones" class="features">
+    <div class="container">
+      <div class="section-title-wrapper">
+        <span class="badge badge-orange">Todo lo que tu equipo necesita</span>
+        <h2 class="section-title">Diseñado para cerrar ventas en WhatsApp, no para complicarte</h2>
+      </div>
+
+      <div class="features-grid">
+        
+        <div class="glass-card feature-card">
+          <div class="feature-card-header">
+            <div class="feature-icon-wrapper">
+              <i data-lucide="message-square"></i>
+            </div>
+            <span class="feature-tag">Productividad</span>
+          </div>
+          <h3>Inbox Multiagente Unificado</h3>
+          <p>Conecta a todo tu equipo a un solo WhatsApp. Asigna conversaciones, deja notas internas y responde en equipo sin pisarse.</p>
+        </div>
+
+        <div class="glass-card feature-card">
+          <div class="feature-card-header">
+            <div class="feature-icon-wrapper">
+              <i data-lucide="columns-3"></i>
+            </div>
+            <span class="feature-tag">Embudo de Ventas</span>
+          </div>
+          <h3>Sales Pipeline Kanban</h3>
+          <p>Visualiza cada oportunidad: Cotizado, Negociación, Cerrado. Arrastra tarjetas y haz seguimiento en tiempo real.</p>
+        </div>
+
+        <div class="glass-card feature-card">
+          <div class="feature-card-header">
+            <div class="feature-icon-wrapper">
+              <i data-lucide="megaphone"></i>
+            </div>
+            <span class="feature-tag">Marketing WA</span>
+          </div>
+          <h3>Broadcasts Inteligentes</h3>
+          <p>Envía promociones y ofertas a listas segmentadas con intervalos anti-bloqueo automáticos.</p>
+        </div>
+
+        <div class="glass-card feature-card">
+          <div class="feature-card-header">
+            <div class="feature-icon-wrapper">
+              <i data-lucide="bot"></i>
+            </div>
+            <span class="feature-tag">Automatización</span>
+          </div>
+          <h3>AI Assistant & Bot No-Code</h3>
+          <p>IA que responde FAQs, califica prospectos y atiende 24/7 fuera de horario laboral. Sin programar.</p>
+        </div>
+
+        <div class="glass-card feature-card">
+          <div class="feature-card-header">
+            <div class="feature-icon-wrapper">
+              <i data-lucide="database"></i>
+            </div>
+            <span class="feature-tag">CRM Base</span>
+          </div>
+          <h3>Base de Datos Supabase</h3>
+          <p>Historial completo de cada cliente, compras, emails y notas en la nube. Sin límites artificiales.</p>
+        </div>
+
+        <div class="glass-card feature-card">
+          <div class="feature-card-header">
+            <div class="feature-icon-wrapper">
+              <i data-lucide="lock"></i>
+            </div>
+            <span class="feature-tag">Sin Burocracia</span>
+          </div>
+          <h3>Cero Meta Cloud API</h3>
+          <p>Tecnología Evolution API (Baileys). Usa tu número de siempre sin verificaciones de Facebook ni trámites.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- PIPELINE KANBAN SECTION -->
+  <section class="kanban-section">
+    <div class="container">
+      <div class="section-title-wrapper">
+        <span class="badge badge-purple">Pipeline de Ventas en Vivo</span>
+        <h2 class="section-title">Visualiza y gestiona tus negocios visualmente</h2>
+        <p class="section-subtitle">Arrastra y organiza tus oportunidades según su estado del proceso de ventas real.</p>
+      </div>
+
+      <!-- KANBAN BOARD MOCKUP -->
+      <div class="kanban-mockup-wrapper">
+        <div class="kanban-board">
+          
+          <!-- Column 1 -->
+          <div class="kanban-column kanban-col-1">
+            <div class="kanban-column-header">
+              <span class="kanban-column-title"><i data-lucide="circle"></i> Nuevo Lead</span>
+              <span class="kanban-column-value">$0 COP <span class="kanban-column-count">0</span></span>
+            </div>
+            <div class="kanban-dropzone">
+              <i data-lucide="arrow-down"></i>
+              <span>Suelta un negocio aquí</span>
+            </div>
+            <button class="kanban-add-btn"><i data-lucide="plus"></i> Agregar negocio</button>
+          </div>
+
+          <!-- Column 2 -->
+          <div class="kanban-column kanban-col-2">
+            <div class="kanban-column-header">
+              <span class="kanban-column-title"><i data-lucide="disc"></i> Contactado</span>
+              <span class="kanban-column-value">$0 COP <span class="kanban-column-count">0</span></span>
+            </div>
+            <div class="kanban-dropzone">
+              <i data-lucide="arrow-down"></i>
+              <span>Suelta un negocio aquí</span>
+            </div>
+            <button class="kanban-add-btn"><i data-lucide="plus"></i> Agregar negocio</button>
+          </div>
+
+          <!-- Column 3 -->
+          <div class="kanban-column kanban-col-3">
+            <div class="kanban-column-header">
+              <span class="kanban-column-title"><i data-lucide="file-text"></i> Cotizado</span>
+              <span class="kanban-column-value">$1.244.432 COP <span class="kanban-column-count">1</span></span>
+            </div>
+            
+            <div class="kanban-card">
+              <span class="kanban-card-title">Bambu</span>
+              <div class="kanban-card-contact">
+                <span class="kanban-card-contact-avatar">KM</span>
+                <span>karol Medina</span>
+              </div>
+              <div class="kanban-card-footer">
+                <span class="kanban-card-price">$1.232.432 COP</span>
+                <span class="kanban-card-date"><i data-lucide="calendar"></i> Jul 21</span>
+              </div>
+            </div>
+
+            <button class="kanban-add-btn"><i data-lucide="plus"></i> Agregar negocio</button>
+          </div>
+
+          <!-- Column 4 -->
+          <div class="kanban-column kanban-col-4">
+            <div class="kanban-column-header">
+              <span class="kanban-column-title"><i data-lucide="message-square"></i> Negociación</span>
+              <span class="kanban-column-value">$12.000 COP <span class="kanban-column-count">1</span></span>
+            </div>
+
+            <div class="kanban-card">
+              <span class="kanban-card-title">Restaurante carrillo</span>
+              <div class="kanban-card-contact">
+                <span class="kanban-card-contact-avatar" style="background-color: var(--accent-orange)">RC</span>
+                <span>anamariaobandoys...</span>
+              </div>
+              <div class="kanban-card-footer">
+                <span class="kanban-card-price">$12.000 COP</span>
+                <span class="kanban-card-date"><i data-lucide="calendar"></i> Jul 20</span>
+              </div>
+            </div>
+
+            <button class="kanban-add-btn"><i data-lucide="plus"></i> Agregar negocio</button>
+          </div>
+
+          <!-- Column 5 -->
+          <div class="kanban-column kanban-col-5">
+            <div class="kanban-column-header">
+              <span class="kanban-column-title"><i data-lucide="check-circle-2"></i> Cerrado</span>
+              <span class="kanban-column-value">$0 COP <span class="kanban-column-count">0</span></span>
+            </div>
+            <div class="kanban-dropzone">
+              <i data-lucide="arrow-down"></i>
+              <span>Suelta un negocio aquí</span>
+            </div>
+            <button class="kanban-add-btn"><i data-lucide="plus"></i> Agregar negocio</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="precios" class="pricing">
+    <div class="container">
+      <div class="section-title-wrapper">
+        <span class="badge badge-green">Precios Claros y Transparentes</span>
+        <h2 class="section-title">Invierte en lo que hace crecer tus ventas</h2>
+        <p class="section-subtitle">Sin costos ocultos por conversación. Sin cobros de Meta Cloud API.</p>
+      </div>
+
+      <div class="pricing-grid">
+        
+        <!-- Plan 1 -->
+        <div class="glass-card pricing-card">
+          <div class="pricing-card-header">
+            <h3>Emprendedor</h3>
+            <p>Ideal para pequeños negocios probando su primer canal de ventas en WhatsApp.</p>
+          </div>
+          <div>
+            <div class="pricing-price-box">
+              <span class="pricing-amount">$49.900</span>
+              <div style="display: flex; flex-direction: column;">
+                <span class="pricing-currency">COP</span>
+                <span class="pricing-period">/ mes</span>
+              </div>
+            </div>
+            <ul class="pricing-features-list">
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> 1 Número WhatsApp</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> 1 Asesor de Ventas</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> Hasta 100 Contactos</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> Inbox Unificado Básico</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> Tablero Kanban Simple</li>
+            </ul>
+          </div>
+          <a href="/checkout/emprendedor" class="btn btn-secondary pricing-btn">Plan Emprendedor →</a>
+        </div>
+
+        <!-- Plan 2 -->
+        <div class="glass-card pricing-card pricing-card-pro">
+          <div class="pricing-popular-badge">
+            <i data-lucide="sparkles"></i> Recomendado para Negocios
+          </div>
+          <div class="pricing-card-header" style="margin-top: 8px;">
+            <h3>PRO (Más Popular 🔥)</h3>
+            <p>Perfecto para negocios en crecimiento que quieren vender en equipo y automatizar.</p>
+          </div>
+          <div>
+            <div class="pricing-price-box">
+              <span class="pricing-amount">$89.900</span>
+              <div style="display: flex; flex-direction: column;">
+                <span class="pricing-currency">COP</span>
+                <span class="pricing-period">/ mes</span>
+              </div>
+            </div>
+            <ul class="pricing-features-list">
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> 1 Número WhatsApp Conectado</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> Hasta 5 Asesores Simultáneos</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> Contactos e Historial Ilimitado</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> Broadcasts Masivos</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> Bot No-Code de Respuestas</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> Notas Internas Privadas</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> Soporte Prioritario en Español</li>
+            </ul>
+          </div>
+          <a href="/checkout/pro" class="btn btn-primary pricing-btn">Plan PRO →</a>
+        </div>
+
+        <!-- Plan 3 -->
+        <div class="glass-card pricing-card">
+          <div class="pricing-card-header">
+            <h3>Business</h3>
+            <p>Para clínicas, constructoras y agencias con alto flujo de mensajes.</p>
+          </div>
+          <div>
+            <div class="pricing-price-box">
+              <span class="pricing-amount">$199.900</span>
+              <div style="display: flex; flex-direction: column;">
+                <span class="pricing-currency">COP</span>
+                <span class="pricing-period">/ mes</span>
+              </div>
+            </div>
+            <ul class="pricing-features-list">
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> Hasta 3 Números WhatsApp</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> Asesores Ilimitados</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> AI Assistant 24/7 Personalizado</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> API & Webhooks Personalizados</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> Exportación a Excel/CSV</li>
+              <li class="pricing-feature-item"><i data-lucide="check-circle-2"></i> Gestor de Cuenta Dedicado VIP</li>
+            </ul>
+          </div>
+          <a href="/checkout/business" class="btn btn-secondary pricing-btn" style="border-color: rgba(37, 211, 102, 0.4); color: var(--accent-primary);">Plan Business →</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="testimonials">
+    <div class="container">
+      <div class="section-title-wrapper">
+        <span class="badge badge-green">Casos de Éxito</span>
+        <h2 class="section-title">Negocios reales que ya venden con WASAPEA PRO</h2>
+      </div>
+
+      <div class="testimonials-grid">
+        
+        <div class="testimonial-card">
+          <p class="testimonial-text">"Atendemos 300+ pacientes al mes por WhatsApp sin perder una sola cita. El pipeline Kanban nos ayudó a cerrar 40% más cotizaciones."</p>
+          <div>
+            <div class="testimonial-user">
+              <div class="testimonial-avatar">AR</div>
+              <div class="testimonial-user-info">
+                <h4>Dr. Alejandro Restrepo</h4>
+                <p>Clínica Odontológica, Bogotá</p>
+              </div>
+            </div>
+            <div class="testimonial-stars">
+              <i data-lucide="star"></i>
+              <i data-lucide="star"></i>
+              <i data-lucide="star"></i>
+              <i data-lucide="star"></i>
+              <i data-lucide="star"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card">
+          <p class="testimonial-text">"5 asesores conectados al mismo número. Los broadcasts nos traen 15 leads calificados por semana. Ya cerramos proyectos de $50K USD."</p>
+          <div>
+            <div class="testimonial-user">
+              <div class="testimonial-avatar">CT</div>
+              <div class="testimonial-user-info">
+                <h4>Camila Torres</h4>
+                <p>Constructora Hábitat, Medellín</p>
+              </div>
+            </div>
+            <div class="testimonial-stars">
+              <i data-lucide="star"></i>
+              <i data-lucide="star"></i>
+              <i data-lucide="star"></i>
+              <i data-lucide="star"></i>
+              <i data-lucide="star"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card">
+          <p class="testimonial-text">"Manejo 12 clientes distintos desde un solo dashboard. El AI Assistant me ahorra 3 horas diarias respondiendo FAQs repetitivas."</p>
+          <div>
+            <div class="testimonial-user">
+              <div class="testimonial-avatar">MG</div>
+              <div class="testimonial-user-info">
+                <h4>Mariana Gómez</h4>
+                <p>Agencia de Marketing, Cali</p>
+              </div>
+            </div>
+            <div class="testimonial-stars">
+              <i data-lucide="star"></i>
+              <i data-lucide="star"></i>
+              <i data-lucide="star"></i>
+              <i data-lucide="star"></i>
+              <i data-lucide="star"></i>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Accordion -->
+  <section id="faq" class="faq">
+    <div class="container">
+      <div class="section-title-wrapper">
+        <span class="badge badge-orange">Preguntas Frecuentes</span>
+        <h2 class="section-title">Todo lo que necesitas saber</h2>
+      </div>
+
+      <div class="faq-wrapper">
+        
+        <details class="faq-item">
+          <summary class="faq-summary">
+            ¿Necesito la API de Meta (Facebook) para usar WASAPEA PRO?
+            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+          </summary>
+          <div class="faq-content">
+            No. Usamos Evolution API (Baileys) que se conecta directamente a tu WhatsApp personal o empresarial. Sin formularios de Facebook, sin verificaciones, sin tokens. Solo escaneas un QR y listo.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            ¿Cuántos asesores puedo conectar a un número de WhatsApp?
+            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+          </summary>
+          <div class="faq-content">
+            Depende del plan. El plan PRO permite hasta 5 asesores simultáneos. El plan Business es ilimitado. Todos ven el inbox unificado y pueden responder sin pisarse.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            ¿Es seguro? ¿Me pueden banear el número?
+            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+          </summary>
+          <div class="faq-content">
+            100% seguro. Baileys emula WhatsApp Web, por lo que es indistinguible del uso normal. Los broadcasts incluyen intervalos automáticos anti-bloqueo. Miles de negocios lo usan sin problemas.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            ¿Tienen prueba?
+            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+          </summary>
+          <div class="faq-content">
+            Sí. El plan PRO incluye 14 días de prueba sin tarjeta de crédito. También puedes contratar el plan Emprendedor por $49.900/mes COP para empezar con lo esencial.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            ¿Puedo migrar mis contactos existentes?
+            <span class="faq-toggle-icon"><i data-lucide="plus"></i></span>
+          </summary>
+          <div class="faq-content">
+            Claro. Importa tus contactos desde CSV/Excel o sincroniza automáticamente con tu WhatsApp. Tu historial de chats se conserva intacto.
+          </div>
+        </details>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        
+        <div class="footer-brand">
+          <a href="#hero" class="logo">
+            <svg height="30" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="lg2" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#00FF87"/><stop offset="1" stop-color="#00C853"/>
+                </linearGradient>
+              </defs>
+              <path d="M32 6C17.642 6 6 17.642 6 32C6 37.076 7.458 41.812 9.98 45.823L7.147 55.715C6.73 57.172 8.077 58.519 9.534 58.102L19.426 55.269C23.437 57.791 28.173 59.25 33.25 59.25C47.608 59.25 59.25 47.608 59.25 33.25C59.25 18.892 47.608 6 32 6Z" fill="url(#lg2)"/>
+              <path d="M20 22L26 40L31 29L36 40L42 22" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>WASAPEA</span> <span class="logo-badge">PRO</span>
+          </a>
+          <p>Wasapea. Vende. Crece.<br>El CRM SaaS #1 para WhatsApp en LATAM.</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Producto</h4>
+          <ul class="footer-links">
+            <li><a href="#funciones" class="footer-link">Funciones</a></li>
+            <li><a href="#precios" class="footer-link">Precios</a></li>
+            <li><a href="#como-funciona" class="footer-link">Cómo Funciona</a></li>
+            <li><a href="#faq" class="footer-link">FAQ</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Comparar</h4>
+          <ul class="footer-links">
+            <li><span class="footer-link" style="cursor:pointer">vs Zendesk</span></li>
+            <li><span class="footer-link" style="cursor:pointer">vs HubSpot</span></li>
+            <li><span class="footer-link" style="cursor:pointer">vs Kommo</span></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Contacto</h4>
+          <ul class="footer-contact-list">
+            <li>📧 hola@wasapeapro.com</li>
+            <li>📱 WhatsApp: +57 317 366 2752</li>
+            <li>📍 Colombia, LATAM</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+        © 2026 WASAPEA PRO — Todos los derechos reservados. Hecho en Colombia con ❤️
+      </div>
+    </div>
+  </footer>
+
+  <!-- JAVASCRIPT FOR DYNAMIC ACTIONS -->
+  <script>
+    // 1. Mobile Hamburger Menu Toggle
+    const hamburgerBtn = document.getElementById('hamburger-btn');
+    const navMenu = document.getElementById('nav-menu');
+
+    hamburgerBtn.addEventListener('click', () => {
+      hamburgerBtn.classList.toggle('active');
+      navMenu.classList.toggle('active');
     });
-    const data = await res.json();
-    
-    if (!res.ok) {
-      if (res.status === 409) {
-        errorDiv.querySelector('p').textContent = '⚠️ ' + data.message;
-        errorDiv.classList.remove('hidden');
+
+    // Close menu when clicking link
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        hamburgerBtn.classList.remove('active');
+        navMenu.classList.remove('active');
+      });
+    });
+
+    // 2. Early Access Waitlist Form Handler
+    const API_URL = '/api/waitlist';
+    const form = document.getElementById('waitlist-form');
+    const submitBtn = document.getElementById('wl-submit');
+    const successDiv = document.getElementById('wl-success');
+    const errorDiv = document.getElementById('wl-error');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('wl-name').value.trim();
+      const email = document.getElementById('wl-email').value.trim();
+      const plan = form.plan.value;
+      if (!email) return;
+
+      submitBtn.disabled = true;
+      const originalBtnText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '⏳ Guardando...';
+      errorDiv.classList.add('hidden');
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, name: name || null, plan })
+        });
+        const data = await res.json();
+        
+        if (!res.ok) {
+          if (res.status === 409) {
+            errorDiv.querySelector('p').textContent = '⚠️ ' + data.message;
+            errorDiv.classList.remove('hidden');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+            return;
+          }
+          throw new Error(data.error || 'Error');
+        }
+        
+        form.classList.add('hidden');
+        successDiv.classList.remove('hidden');
+      } catch (err) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '🔥 Quiero mi 50% OFF — Unirme Ahora <span>→</span>';
-        return;
+        submitBtn.innerHTML = originalBtnText;
+        errorDiv.querySelector('p').textContent = '⚠️ Error de conexión. Intenta de nuevo.';
+        errorDiv.classList.remove('hidden');
       }
-      throw new Error(data.error || 'Error');
-    }
-    
-    form.classList.add('hidden');
-    successDiv.classList.remove('hidden');
-  } catch (err) {
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = '🔥 Quiero mi 50% OFF — Unirme Ahora <span>→</span>';
-    errorDiv.querySelector('p').textContent = '⚠️ Error de conexión. Intenta de nuevo.';
-    errorDiv.classList.remove('hidden');
-  }
-});
-</script>
-
-<!-- HOW IT WORKS -->
-<section id="como-funciona" class="py-24 px-4 lg:px-8">
-  <div class="max-w-7xl mx-auto">
-    <div class="text-center max-w-3xl mx-auto mb-16">
-      <h2 class="text-xs font-ui font-bold text-[#00E676] uppercase tracking-widest mb-3">Simplicidad Total • En 3 Simples Pasos</h2>
-      <p class="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight">Cómo empezar a vender por WhatsApp sin complicaciones</p>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
-        <div class="flex items-center justify-between mb-6">
-          <span class="text-4xl font-display font-extrabold text-slate-600">01</span>
-          <span class="px-3 py-1 rounded-full text-xs font-ui font-semibold bg-white/5 border border-white/10 text-slate-300">Cero Burocracia</span>
-        </div>
-        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-[#00E676] flex items-center justify-center text-slate-950 font-bold mb-6 shadow-lg text-2xl">📱</div>
-        <h3 class="text-xl font-display font-bold text-white mb-3">Escanea el Código QR</h3>
-        <p class="text-sm text-slate-300 font-sans leading-relaxed">Conecta tu WhatsApp en 30 segundos sin verificaciones de Meta Cloud API ni trámites. Sin salir de tu número habitual.</p>
-        <div class="mt-8 pt-4 border-t border-white/10 text-xs font-ui font-semibold text-[#00E676]">✅ Paso 01 listo en segundos</div>
-      </div>
-      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
-        <div class="flex items-center justify-between mb-6">
-          <span class="text-4xl font-display font-extrabold text-slate-600">02</span>
-          <span class="px-3 py-1 rounded-full text-xs font-ui font-semibold bg-white/5 border border-white/10 text-slate-300">Multiagente</span>
-        </div>
-        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center text-slate-950 font-bold mb-6 shadow-lg text-2xl">👥</div>
-        <h3 class="text-xl font-display font-bold text-white mb-3">Organiza tus Chats y Asesores</h3>
-        <p class="text-sm text-slate-300 font-sans leading-relaxed">Asigna conversaciones a tu equipo, configura respuestas rápidas y notas internas privadas que el cliente nunca ve.</p>
-        <div class="mt-8 pt-4 border-t border-white/10 text-xs font-ui font-semibold text-[#00E676]">✅ Paso 02 listo en segundos</div>
-      </div>
-      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
-        <div class="flex items-center justify-between mb-6">
-          <span class="text-4xl font-display font-extrabold text-slate-600">03</span>
-          <span class="px-3 py-1 rounded-full text-xs font-ui font-semibold bg-white/5 border border-white/10 text-slate-300">Cierre de Ventas</span>
-        </div>
-        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#FF6B00] to-amber-400 flex items-center justify-center text-slate-950 font-bold mb-6 shadow-lg text-2xl">📈</div>
-        <h3 class="text-xl font-display font-bold text-white mb-3">Wasapea, Automatiza y Vende Más</h3>
-        <p class="text-sm text-slate-300 font-sans leading-relaxed">Mueve prospectos por el embudo Kanban, envía broadcasts masivos y deja que la IA responda 24/7 por ti.</p>
-        <div class="mt-8 pt-4 border-t border-white/10 text-xs font-ui font-semibold text-[#00E676]">✅ Paso 03 listo en segundos</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- FEATURES -->
-<section id="funciones" class="py-24 px-4 lg:px-8 bg-[#131B2E]/30">
-  <div class="max-w-7xl mx-auto">
-    <div class="text-center max-w-3xl mx-auto mb-16">
-      <h2 class="text-xs font-ui font-bold text-[#FF6B00] uppercase tracking-widest mb-3">Todo lo que tu equipo necesita</h2>
-      <p class="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight">Diseñado para cerrar ventas en WhatsApp, no para complicarte</p>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
-        <div class="flex items-center justify-between mb-6">
-          <div class="w-12 h-12 rounded-2xl bg-[#00C853]/10 border border-[#00C853]/30 flex items-center justify-center text-[#00E676] text-2xl">💬</div>
-          <span class="text-[11px] font-ui font-bold px-2.5 py-1 rounded-full bg-white/5 text-slate-400">Productividad</span>
-        </div>
-        <h3 class="text-xl font-display font-bold text-white mb-3">Inbox Multiagente Unificado</h3>
-        <p class="text-sm text-slate-300 font-sans leading-relaxed">Conecta a todo tu equipo a un solo WhatsApp. Asigna conversaciones, deja notas internas y responde en equipo sin pisarse.</p>
-      </div>
-      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
-        <div class="flex items-center justify-between mb-6">
-          <div class="w-12 h-12 rounded-2xl bg-[#00C853]/10 border border-[#00C853]/30 flex items-center justify-center text-[#00E676] text-2xl">📋</div>
-          <span class="text-[11px] font-ui font-bold px-2.5 py-1 rounded-full bg-white/5 text-slate-400">Embudo de Ventas</span>
-        </div>
-        <h3 class="text-xl font-display font-bold text-white mb-3">Sales Pipeline Kanban</h3>
-        <p class="text-sm text-slate-300 font-sans leading-relaxed">Visualiza cada oportunidad: Cotizado, Negociación, Cerrado. Arrastra tarjetas y haz seguimiento en tiempo real.</p>
-      </div>
-      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
-        <div class="flex items-center justify-between mb-6">
-          <div class="w-12 h-12 rounded-2xl bg-[#00C853]/10 border border-[#00C853]/30 flex items-center justify-center text-[#00E676] text-2xl">📢</div>
-          <span class="text-[11px] font-ui font-bold px-2.5 py-1 rounded-full bg-white/5 text-slate-400">Marketing WA</span>
-        </div>
-        <h3 class="text-xl font-display font-bold text-white mb-3">Broadcasts Inteligentes</h3>
-        <p class="text-sm text-slate-300 font-sans leading-relaxed">Envía promociones y ofertas a listas segmentadas con intervalos anti-bloqueo automáticos.</p>
-      </div>
-      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
-        <div class="flex items-center justify-between mb-6">
-          <div class="w-12 h-12 rounded-2xl bg-[#00C853]/10 border border-[#00C853]/30 flex items-center justify-center text-[#00E676] text-2xl">🤖</div>
-          <span class="text-[11px] font-ui font-bold px-2.5 py-1 rounded-full bg-white/5 text-slate-400">Automatización</span>
-        </div>
-        <h3 class="text-xl font-display font-bold text-white mb-3">AI Assistant & Bot No-Code</h3>
-        <p class="text-sm text-slate-300 font-sans leading-relaxed">IA que responde FAQs, califica prospectos y atiende 24/7 fuera de horario laboral. Sin programar.</p>
-      </div>
-      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
-        <div class="flex items-center justify-between mb-6">
-          <div class="w-12 h-12 rounded-2xl bg-[#00C853]/10 border border-[#00C853]/30 flex items-center justify-center text-[#00E676] text-2xl">🗄️</div>
-          <span class="text-[11px] font-ui font-bold px-2.5 py-1 rounded-full bg-white/5 text-slate-400">CRM Base</span>
-        </div>
-        <h3 class="text-xl font-display font-bold text-white mb-3">Base de Datos Supabase</h3>
-        <p class="text-sm text-slate-300 font-sans leading-relaxed">Historial completo de cada cliente, compras, emails y notas en la nube. Sin límites artificiales.</p>
-      </div>
-      <div class="glass-card glass-card-hover p-8 rounded-3xl border border-white/10">
-        <div class="flex items-center justify-between mb-6">
-          <div class="w-12 h-12 rounded-2xl bg-[#00C853]/10 border border-[#00C853]/30 flex items-center justify-center text-[#00E676] text-2xl">🔓</div>
-          <span class="text-[11px] font-ui font-bold px-2.5 py-1 rounded-full bg-white/5 text-slate-400">Sin Burocracia</span>
-        </div>
-        <h3 class="text-xl font-display font-bold text-white mb-3">Cero Meta Cloud API</h3>
-        <p class="text-sm text-slate-300 font-sans leading-relaxed">Tecnología Evolution API (Baileys). Usa tu número de siempre sin verificaciones de Facebook ni trámites.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- PRICING -->
-<section id="precios" class="py-24 px-4 lg:px-8 relative">
-  <div class="max-w-7xl mx-auto">
-    <div class="text-center max-w-3xl mx-auto mb-16">
-      <h2 class="text-xs font-ui font-bold text-[#00E676] uppercase tracking-widest mb-3">Precios Claros y Transparentes</h2>
-      <p class="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight mb-4">Invierte en lo que hace crecer tus ventas</p>
-      <p class="text-slate-300 font-sans">Sin costos ocultos por conversación. Sin cobros de Meta Cloud API.</p>
-    </div>
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-      <div class="rounded-3xl p-8 glass-card border border-white/10">
-        <h3 class="text-xl font-display font-bold text-white mb-2">Emprendedor</h3>
-        <p class="text-xs text-slate-300 min-h-[36px] mb-6">Ideal para pequeños negocios probando su primer canal de ventas en WhatsApp.</p>
-        <div class="flex items-baseline gap-2 mb-6 border-b border-white/10 pb-6">
-          <span class="text-5xl font-display font-extrabold text-white">$15</span>
-          <span class="text-xs text-slate-400 font-ui">USD / mes</span>
-        </div>
-        <ul class="space-y-3.5 mb-8">
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ 1 Número WhatsApp</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ 1 Asesor de Ventas</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Hasta 100 Contactos</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Inbox Unificado Básico</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Tablero Kanban Simple</li>
-        </ul>
-        <a href="/checkout/emprendedor" class="w-full block text-center py-4 rounded-xl font-ui text-sm border border-white/20 text-white hover:bg-white/10 transition-all">Plan Emprendedor →</a>
-      </div>
-      <div class="rounded-3xl p-8 glass-card border-2 border-[#FF6B00] shadow-glow-amber scale-105 z-10 relative">
-        <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#FF6B00] text-white text-xs font-ui font-bold uppercase tracking-wider shadow-md flex items-center gap-1">✦ Recomendado para Negocios</div>
-        <h3 class="text-xl font-display font-bold text-white mb-2">PRO (Más Popular 🔥)</h3>
-        <p class="text-xs text-slate-300 min-h-[36px] mb-6">Perfecto para negocios en crecimiento que quieren vender en equipo y automatizar.</p>
-        <div class="flex items-baseline gap-2 mb-6 border-b border-white/10 pb-6">
-          <span class="text-5xl font-display font-extrabold text-white">$29</span>
-          <span class="text-xs text-slate-400 font-ui">USD / mes</span>
-        </div>
-        <ul class="space-y-3.5 mb-8">
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ 1 Número WhatsApp Conectado</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Hasta 5 Asesores Simultáneos</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Contactos e Historial Ilimitado</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Broadcasts Masivos</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Bot No-Code de Respuestas</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Notas Internas Privadas</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Soporte Prioritario en Español</li>
-        </ul>
-        <a href="/checkout/pro" class="w-full block text-center py-4 rounded-xl font-ui text-sm font-bold text-white bg-gradient-to-r from-[#FF6B00] to-amber-500 hover:from-amber-500 hover:to-[#FF6B00] shadow-glow-amber transition-all transform hover:-translate-y-0.5">Plan PRO →</a>
-      </div>
-      <div class="rounded-3xl p-8 glass-card border border-white/10">
-        <h3 class="text-xl font-display font-bold text-white mb-2">Business Escala</h3>
-        <p class="text-xs text-slate-300 min-h-[36px] mb-6">Para clínicas, constructoras y agencias con alto flujo de mensajes.</p>
-        <div class="flex items-baseline gap-2 mb-6 border-b border-white/10 pb-6">
-          <span class="text-5xl font-display font-extrabold text-white">$69</span>
-          <span class="text-xs text-slate-400 font-ui">USD / mes</span>
-        </div>
-        <ul class="space-y-3.5 mb-8">
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Hasta 3 Números WhatsApp</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Asesores Ilimitados</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ AI Assistant 24/7 Personalizado</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ API & Webhooks Personalizados</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Exportación a Excel/CSV</li>
-          <li class="flex items-center gap-3 text-sm text-slate-200">✅ Gestor de Cuenta Dedicado VIP</li>
-        </ul>
-        <a href="/checkout/business" class="w-full block text-center py-4 rounded-xl font-ui text-sm border border-[#00E676]/40 text-[#00E676] hover:bg-[#00E676]/10 transition-all">Plan Business →</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- TESTIMONIALS -->
-<section class="py-24 px-4 lg:px-8 bg-[#131B2E]/30">
-  <div class="max-w-7xl mx-auto">
-    <div class="text-center max-w-3xl mx-auto mb-16">
-      <h2 class="text-xs font-ui font-bold text-[#00E676] uppercase tracking-widest mb-3">Casos de Éxito</h2>
-      <p class="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight">Negocios reales que ya venden con WASAPEA PRO</p>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <div class="glass-card p-8 rounded-3xl border border-white/10">
-        <div class="flex items-center gap-4 mb-4">
-          <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-emerald-600 to-green-400 flex items-center justify-center text-white font-bold">DR</div>
-          <div><h4 class="text-white font-bold text-sm">Dr. Alejandro Restrepo</h4><p class="text-slate-400 text-xs">Clínica Odontológica, Bogotá</p></div>
-        </div>
-        <p class="text-slate-300 text-sm leading-relaxed">"Atendemos 300+ pacientes al mes por WhatsApp sin perder una sola cita. El pipeline Kanban nos ayudó a cerrar 40% más cotizaciones."</p>
-        <div class="mt-4 text-[#FF6B00] text-xs font-bold">⭐⭐⭐⭐⭐</div>
-      </div>
-      <div class="glass-card p-8 rounded-3xl border border-white/10">
-        <div class="flex items-center gap-4 mb-4">
-          <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center text-white font-bold">CT</div>
-          <div><h4 class="text-white font-bold text-sm">Camila Torres</h4><p class="text-slate-400 text-xs">Constructora Hábitat, Medellín</p></div>
-        </div>
-        <p class="text-slate-300 text-sm leading-relaxed">"5 asesores conectados al mismo número. Los broadcasts nos traen 15 leads calificados por semana. Ya cerramos proyectos de $50K USD."</p>
-        <div class="mt-4 text-[#FF6B00] text-xs font-bold">⭐⭐⭐⭐⭐</div>
-      </div>
-      <div class="glass-card p-8 rounded-3xl border border-white/10">
-        <div class="flex items-center gap-4 mb-4">
-          <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-600 to-pink-400 flex items-center justify-center text-white font-bold">MG</div>
-          <div><h4 class="text-white font-bold text-sm">Mariana Gómez</h4><p class="text-slate-400 text-xs">Agencia de Marketing, Cali</p></div>
-        </div>
-        <p class="text-slate-300 text-sm leading-relaxed">"Manejo 12 clientes distintos desde un solo dashboard. El AI Assistant me ahorra 3 horas diarias respondiendo FAQs repetitivas."</p>
-        <div class="mt-4 text-[#FF6B00] text-xs font-bold">⭐⭐⭐⭐⭐</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- FAQ -->
-<section id="faq" class="py-24 px-4 lg:px-8">
-  <div class="max-w-4xl mx-auto">
-    <div class="text-center mb-16">
-      <h2 class="text-xs font-ui font-bold text-[#FF6B00] uppercase tracking-widest mb-3">Preguntas Frecuentes</h2>
-      <p class="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight">Todo lo que necesitas saber</p>
-    </div>
-    <div class="space-y-4">
-      <details class="glass-card rounded-2xl border border-white/10 p-6 cursor-pointer group">
-        <summary class="text-lg font-display font-bold text-white flex items-center justify-between list-none">¿Necesito la API de Meta (Facebook) para usar WASAPEA PRO? <span class="text-[#00E676] text-xl">+</span></summary>
-        <p class="mt-4 text-slate-300 leading-relaxed text-sm">No. Usamos Evolution API (Baileys) que se conecta directamente a tu WhatsApp personal o empresarial. Sin formularios de Facebook, sin verificaciones, sin tokens. Solo escaneas un QR y listo.</p>
-      </details>
-      <details class="glass-card rounded-2xl border border-white/10 p-6 cursor-pointer group">
-        <summary class="text-lg font-display font-bold text-white flex items-center justify-between list-none">¿Cuántos asesores puedo conectar a un número de WhatsApp? <span class="text-[#00E676] text-xl">+</span></summary>
-        <p class="mt-4 text-slate-300 leading-relaxed text-sm">Depende del plan. El plan PRO permite hasta 5 asesores simultáneos. El plan Business Escala es ilimitado. Todos ven el inbox unificado y pueden responder sin pisarse.</p>
-      </details>
-      <details class="glass-card rounded-2xl border border-white/10 p-6 cursor-pointer group">
-        <summary class="text-lg font-display font-bold text-white flex items-center justify-between list-none">¿Es seguro? ¿Me pueden banear el número? <span class="text-[#00E676] text-xl">+</span></summary>
-        <p class="mt-4 text-slate-300 leading-relaxed text-sm">100% seguro. Baileys emula WhatsApp Web, por lo que es indistinguible del uso normal. Los broadcasts incluyen intervalos automáticos anti-bloqueo. Miles de negocios lo usan sin problemas.</p>
-      </details>
-      <details class="glass-card rounded-2xl border border-white/10 p-6 cursor-pointer group">
-        <summary class="text-lg font-display font-bold text-white flex items-center justify-between list-none">¿Tienen prueba? <span class="text-[#00E676] text-xl">+</span></summary>
-        <p class="mt-4 text-slate-300 leading-relaxed text-sm">Sí. El plan PRO incluye 14 días de prueba sin tarjeta de crédito. También tenemos el plan Emprendedor por $15/mes para empezar con lo esencial.</p>
-      </details>
-      <details class="glass-card rounded-2xl border border-white/10 p-6 cursor-pointer group">
-        <summary class="text-lg font-display font-bold text-white flex items-center justify-between list-none">¿Puedo migrar mis contactos existentes? <span class="text-[#00E676] text-xl">+</span></summary>
-        <p class="mt-4 text-slate-300 leading-relaxed text-sm">Claro. Importa tus contactos desde CSV/Excel o sincroniza automáticamente con tu WhatsApp. Tu historial de chats se conserva intacto.</p>
-      </details>
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer class="py-16 px-4 lg:px-8 border-t border-white/10">
-  <div class="max-w-7xl mx-auto">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-      <div>
-        <div class="flex items-center gap-2 mb-4">
-          <svg height="32" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="lg2" x1="0" y1="0" x2="64" y2="64"><stop stop-color="#00FF87"/><stop offset="1" stop-color="#00C853"/></linearGradient></defs><path d="M32 6C17.642 6 6 17.642 6 32C6 37.076 7.458 41.812 9.98 45.823L7.147 55.715C6.73 57.172 8.077 58.519 9.534 58.102L19.426 55.269C23.437 57.791 28.173 59.25 33.25 59.25C47.608 59.25 59.25 47.608 59.25 33.25C59.25 18.892 47.608 6 32 6Z" fill="url(#lg2)"/><path d="M20 22L26 40L31 29L36 40L42 22" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="font-display font-extrabold text-lg text-white">WASAPEA <span class="text-[#FF6B00]">PRO</span></span>
-        </div>
-        <p class="text-sm text-slate-400 leading-relaxed">Wasapea. Vende. Crece.<br>El CRM SaaS #1 para WhatsApp en LATAM.</p>
-      </div>
-      <div>
-        <h4 class="text-white font-bold text-sm mb-4">Producto</h4>
-        <ul class="space-y-2 text-sm text-slate-400">
-          <li><a href="#funciones" class="hover:text-[#00E676] transition-colors">Funciones</a></li>
-          <li><a href="#precios" class="hover:text-[#00E676] transition-colors">Precios</a></li>
-          <li><a href="#como-funciona" class="hover:text-[#00E676] transition-colors">Cómo Funciona</a></li>
-          <li><a href="#faq" class="hover:text-[#00E676] transition-colors">FAQ</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4 class="text-white font-bold text-sm mb-4">Comparar</h4>
-        <ul class="space-y-2 text-sm text-slate-400">
-          <li><span class="hover:text-[#00E676] transition-colors cursor-pointer">vs Zendesk</span></li>
-          <li><span class="hover:text-[#00E676] transition-colors cursor-pointer">vs HubSpot</span></li>
-          <li><span class="hover:text-[#00E676] transition-colors cursor-pointer">vs Kommo</span></li>
-        </ul>
-      </div>
-      <div>
-        <h4 class="text-white font-bold text-sm mb-4">Contacto</h4>
-        <ul class="space-y-2 text-sm text-slate-400">
-          <li>📧 hola@wasapeapro.com</li>
-          <li>📱 WhatsApp: +57 317 366 2752</li>
-          <li>📍 Colombia, LATAM</li>
-        </ul>
-      </div>
-    </div>
-    <div class="pt-8 border-t border-white/10 text-center text-sm text-slate-500">
-      © 2026 WASAPEA PRO — Todos los derechos reservados. Hecho en Colombia con ❤️
-    </div>
-  </div>
-</footer>
-
+    });
+  </script>
+<script>lucide.createIcons();</script>
 </body>
 </html>
