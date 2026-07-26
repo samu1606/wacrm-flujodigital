@@ -71,6 +71,7 @@ export default function CheckoutAlertasPage() {
         signature: { integrity: data.signatureIntegrity },
         customerData: {
           phoneNumber: phone,
+          phoneNumberPrefix: '+57',
         },
       })
 
