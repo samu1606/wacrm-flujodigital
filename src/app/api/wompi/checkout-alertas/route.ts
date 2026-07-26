@@ -2,12 +2,15 @@
  * POST /api/wompi/checkout-alertas — Public checkout for alert plans
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash } from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 const ALERT_PLANS: Record<string, { name: string; cents: number }> = {
-  pro: { name: 'Alertas Pro', cents: 38_000_00 },    // $9 USD ≈ $38K COP
-  empresarial: { name: 'Alertas Empresarial', cents: 80_000_00 }, // $19 USD ≈ $80K COP
+  pro: { name: 'Alertas Pro', cents: 38_000_00 },
+  empresarial: { name: 'Alertas Empresarial', cents: 80_000_00 },
 };
+
+const CURRENCY = 'COP';
 
 function supabaseAdmin() {
   return createClient(
@@ -30,11 +33,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid plan. Use pro or empresarial' }, { status: 400 });
     }
 
-    const admin = supabaseAdmin();
     const reference = `alertas-${planKey}-${phone}-${Date.now()}`;
+    const integrityKey = process.env.WOMPI_INTEGRITY_KEY || '';
 
-    // Create payment record
-    const { data: payment, error } = await admin
+    // Generate Wompi integrity signature (required in production)
+    const integrity = integrityKey
+      ? createHash('sha256').update(`${reference}${plan.cents}${CURRENCY}${integrityKey}`).digest('hex')
+      : '';
+
+    // Save payment record
+    const admin = supabaseAdmin();
+    const { error } = await admin
       .from('payments')
       .insert({
         plan: `alertas_${planKey}`,
@@ -44,26 +53,22 @@ export async function POST(request: NextRequest) {
         metadata: { phone, product: 'alertas' },
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      })
-      .select('id')
-      .single();
+      });
 
     if (error) {
       console.error('[checkout-alertas] Payment insert error:', error);
       return NextResponse.json({ error: 'Failed to create payment' }, { status: 500 });
     }
 
-    // Wompi payment link
-    const wompiPublicKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY || '';
-
     return NextResponse.json({
       reference,
       amount: plan.cents,
-      currency: 'COP',
+      currency: CURRENCY,
+      integrity,
       plan: planKey,
       planName: plan.name,
       phone,
-      wompiPublicKey,
+      wompiPublicKey: process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY || '',
     });
   } catch (e) {
     console.error('[checkout-alertas] Error:', e);

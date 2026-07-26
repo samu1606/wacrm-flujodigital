@@ -167,7 +167,8 @@ export default function CheckoutAlertasPage() {
               <input type="hidden" name="currency" value="COP" />
               <input type="hidden" name="amount-in-cents" value={wompiData.amount} />
               <input type="hidden" name="reference" value={wompiData.reference} />
-              <input type="hidden" name="redirect-url" value={`http://148.230.90.171:8095/alertas?paid=true&phone=${wompiData.phone}`} />
+              {wompiData.integrity && <input type="hidden" name="signature:integrity" value={wompiData.integrity} />}
+              <input type="hidden" name="redirect-url" value={`http://148.230.90.171:8095/checkout-alertas?paid=true&phone=${wompiData.phone}`} />
               <button
                 type="submit"
                 style={{
