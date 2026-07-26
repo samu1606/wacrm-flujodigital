@@ -161,13 +161,13 @@ export default function CheckoutAlertasPage() {
             <form
               action="https://checkout.wompi.co/p/"
               method="GET"
-              target="_blank"
             >
               <input type="hidden" name="public-key" value={wompiData.wompiPublicKey} />
               <input type="hidden" name="currency" value="COP" />
               <input type="hidden" name="amount-in-cents" value={wompiData.amount} />
               <input type="hidden" name="reference" value={wompiData.reference} />
-              {wompiData.integrity && <input type="hidden" name="signature:integrity" value={wompiData.integrity} />}
+              <input type="hidden" name="integrity" value={wompiData.integrity} />
+              <input type="hidden" name="signature:integrity" value={wompiData.integrity} />
               <input type="hidden" name="redirect-url" value={`http://148.230.90.171:8095/checkout-alertas?paid=true&phone=${wompiData.phone}`} />
               <button
                 type="submit"
