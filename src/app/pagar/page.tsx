@@ -67,7 +67,7 @@ export default function PagarPage() {
   }
 
   // Nequi number for QR
-  const nequiNumber = '3106055920';
+  const nequiNumber = '3173662752';
 
   return (
     <div style={styles.container}>
