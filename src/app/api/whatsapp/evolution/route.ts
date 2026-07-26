@@ -433,8 +433,34 @@ async function processMessage(
   }
 
   // Insert message
+  // For outbound: skip if already saved by send-message.ts (dedup)
+  let newMsg: { id: string } | null = null
+
+  if (isOutbound && msgId) {
+    const { data: existing } = await admin
+      .from('messages')
+      .select('id')
+      .eq('message_id', msgId)
+      .limit(1)
+
+    if (existing && existing.length > 0) {
+      // Already persisted by send-message.ts — just update conversation
+      await admin
+        .from('conversations')
+        .update({
+          last_message_text: contentText || `[${contentType}]`,
+          last_message_at: new Date().toISOString(),
+          unread_count: 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', convId)
+
+      return NextResponse.json({ status: 'ok', dedup: true })
+    }
+  }
+
   const senderType = isOutbound ? 'agent' : 'customer'
-  const { data: newMsg, error: msgErr } = await admin
+  const insertResult = await admin
     .from('messages')
     .insert({
       conversation_id: convId,
@@ -447,6 +473,9 @@ async function processMessage(
     })
     .select('id')
     .single()
+
+  const msgErr = insertResult.error
+  newMsg = insertResult.data
 
   if (msgErr) {
     console.error(`[evo] Msg insert error (${instanceName}):`, msgErr.message)
