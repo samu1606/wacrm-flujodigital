@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const privateKey = process.env.WOMPI_PRIVATE_KEY || '';
 
     // Create payment link via Wompi API (server-side, no CORS)
-    const wompiRes = await fetch(`${WOMPI_API}/payment_links`, {
+    const wompiRes = await fetch(`${WOMPI_API}/payment-links`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${privateKey}`,
