@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       plan: planKey,
       planName: plan.name,
       phone,
-      wompiPublicKey: process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY || '',
+      wompiPublicKey: process.env.WOMPI_PUBLIC_KEY || '',
     });
   } catch (e) {
     console.error('[checkout-alertas] Error:', e);
