@@ -526,8 +526,9 @@ async function autoSubscribe(admin: any, phone: string, message: string) {
   }
 
   if (!product) {
-    // Send help message
-    const help = '👋 *¡Hola! Soy Alertas PRO*\n\nEstos son los productos disponibles:\n\n' +
+    // Only reply if they explicitly ask for help
+    if (msgLower.includes('info') || msgLower.includes('ayuda') || msgLower.includes('alertas') || msgLower.includes('menu') || msgLower.includes('productos')) {
+      const help = '👋 *¡Hola! Soy Alertas PRO*\n\nEstos son los productos disponibles:\n\n' +
       '💰 *CryptoTrader* — BTC, ETH, USDT\n' +
       '💱 *ForexAlert* — Divisas mundiales\n' +
       '🥇 *GoldTrack* — Metales preciosos\n' +
@@ -536,9 +537,10 @@ async function autoSubscribe(admin: any, phone: string, message: string) {
       '🛡️ *Vigilante Digital* — Monitoreo web\n\n' +
       '📱 Envía el nombre del producto que quieres.\n' +
       '❌ Para cancelar: "cancelar CryptoTrader"'
-    try {
-      await sendWhatsApp(phone, help)
-    } catch (e) { /* ignore */ }
+      try {
+        await sendWhatsApp(phone, help)
+      } catch (e) { /* ignore */ }
+    }
     return
   }
 
