@@ -559,7 +559,7 @@ async function autoSubscribe(admin: any, phone: string, message: string) {
       })
 
     if (!error) {
-      const reply = `${info.emoji} *¡Suscrito a ${info.name}!*\n\nRecibirás las alertas directo en WhatsApp.\n\n📱 +${phone}\n📦 Plan: *GRATIS*\n\nPara cancelar: "cancelar ${info.name}"\nPara configurar umbrales: visita alertas.148-230-90-171.nip.io`
+      const reply = `${info.emoji} *¡Suscrito a ${info.name}!*\n\nRecibirás las alertas directo en WhatsApp.\n\n📱 +${phone}\n📦 Plan: *GRATIS*\n\n🔄 *Upgrade a Pro:* ${process.env.NEXT_PUBLIC_SITE_URL || 'http://148.230.90.171:8095'}/checkout-alertas?phone=${phone}\n\n❌ Cancelar: "cancelar ${info.name}"`
       await sendWhatsApp(phone, reply)
       console.log(`[evo] ✅ Auto-subscribed ${phone} to ${product}`)
     }

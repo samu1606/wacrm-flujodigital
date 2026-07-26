@@ -129,7 +129,44 @@ export async function POST(request: NextRequest) {
 
   if (status === 'APPROVED') {
     await activateSubscription(payment, txId);
+
+    // Also handle alertas plan upgrades
+    if (payment.plan?.startsWith('alertas_')) {
+      await upgradeAlertSubscriber(payment);
+    }
   }
 
   return NextResponse.json({ status: 'ok' });
+}
+
+async function upgradeAlertSubscriber(payment: any) {
+  const admin = supabaseAdmin();
+
+  // Get phone from reference: alertas-pro-573001234567-1234567890
+  const refParts = payment.reference?.split('-') || [];
+  const phone = refParts.length >= 3 ? refParts[2] : null;
+
+  if (!phone) {
+    console.warn('[wompi/webhook] Could not extract phone from reference:', payment.reference);
+    return;
+  }
+
+  const alertPlan = (payment.plan || '').replace('alertas_', '');
+
+  // Update all alert subscriptions for this phone to the new plan
+  const { error } = await admin
+    .from('alert_subscribers')
+    .update({
+      plan: alertPlan,
+      active: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('phone', phone);
+
+  if (error) {
+    console.error('[wompi/webhook] Alert upgrade error:', error.message);
+    return;
+  }
+
+  console.log(`[wompi/webhook] ✅ Alert upgrade: ${phone} → ${alertPlan}`);
 }
