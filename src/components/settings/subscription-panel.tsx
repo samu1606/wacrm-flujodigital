@@ -3,9 +3,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { Loader2, Crown, Zap, Clock, CheckCircle2, ExternalLink } from 'lucide-react';
+import { Loader2, Crown, Zap, Clock, CheckCircle2, ExternalLink, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useSubscription } from '@/hooks/use-subscription';
+import { ENABLE_PAYWALL } from '@/lib/flags';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -172,6 +173,8 @@ export function SubscriptionPanel() {
   const isTrial = sub?.status === 'trial';
   const isExpired = sub?.status === 'expired';
   const isFree = planKey === 'free' || !sub || sub?.status === 'no_subscription';
+  const paywallEnabled = ENABLE_PAYWALL;
+  const isBetaFree = !paywallEnabled && sub?.plan === 'free_unlimited';
 
   return (
     <section>
@@ -197,7 +200,15 @@ export function SubscriptionPanel() {
               </span>
               <span className="text-muted-foreground text-sm">{planName}</span>
             </div>
-            {isFree ? (
+            {isBetaFree ? (
+              <Alert className="bg-gradient-to-r from-violet-950/50 to-fuchsia-950/50 border-violet-700/50">
+                <Sparkles className="size-4 text-violet-400" />
+                <AlertTitle className="text-violet-200">Acceso Beta Gratuito Activo</AlertTitle>
+                <AlertDescription className="text-violet-100/80 text-sm">
+                  Disfruta de todas las funciones sin costo durante el lanzamiento.
+                </AlertDescription>
+              </Alert>
+            ) : isFree ? (
               <Alert className="bg-blue-950/30 border-blue-700/50">
                 <Clock className="size-4 text-blue-400" />
                 <AlertTitle className="text-blue-200">Plan Gratuito</AlertTitle>
@@ -233,6 +244,7 @@ export function SubscriptionPanel() {
           </CardContent>
         </Card>
 
+        {paywallEnabled && (
         <Card>
           <CardHeader>
             <CardTitle className="text-foreground text-base flex items-center gap-2">
@@ -269,6 +281,7 @@ export function SubscriptionPanel() {
             {!widgetReady && <p className="text-xs text-muted-foreground text-center">Cargando pasarela...</p>}
           </CardContent>
         </Card>
+        )}
       </div>
     </section>
   );

@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { ENABLE_PAYWALL } from '@/lib/flags';
 
 interface SubInfo {
   plan: string;
@@ -33,10 +34,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const { user, accountId, profileLoading } = useAuth();
   const [sub, setSub] = useState<SubInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  // Prevent duplicate fetches during React Strict Mode double-mount.
   const fetchingRef = useRef(false);
-  // Track the last accountId we fetched for so we refetch on account switch.
   const lastAccountIdRef = useRef<string | null>(null);
+
+  // Beta launch: bypass all paywalls when NEXT_PUBLIC_ENABLE_PAYWALL=false
+  const paywallEnabled = ENABLE_PAYWALL;
 
   const fetchSub = useCallback(async (account: string) => {
     if (fetchingRef.current && lastAccountIdRef.current === account) return;
@@ -57,6 +59,19 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Beta launch: skip API call, simulate unlimited free access
+    if (!paywallEnabled) {
+      if (user && accountId) {
+        setSub({
+          plan: 'free_unlimited',
+          status: 'active',
+          trialDaysLeft: 999,
+        });
+      }
+      setLoading(false);
+      return;
+    }
+
     // Wait until auth + profile are fully resolved.
     if (profileLoading) return;
     if (!user || !accountId) {
@@ -72,7 +87,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       // Already have data for this account — keep it.
       setLoading(false);
     }
-  }, [user, accountId, profileLoading, fetchSub]);
+  }, [user, accountId, profileLoading, fetchSub, paywallEnabled]);
 
   const refetch = useCallback(async () => {
     if (!accountId) return;

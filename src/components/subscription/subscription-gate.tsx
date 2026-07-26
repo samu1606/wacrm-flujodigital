@@ -2,7 +2,8 @@
 
 import { useAuth } from '@/hooks/use-auth';
 import { useSubscription } from '@/hooks/use-subscription';
-import { Loader2, Crown, Clock, AlertCircle } from 'lucide-react';
+import { ENABLE_PAYWALL } from '@/lib/flags';
+import { Loader2, Crown, Clock, AlertCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const PLAN_LINKS: Record<string, string> = {
@@ -11,11 +12,17 @@ const PLAN_LINKS: Record<string, string> = {
   business: '/settings?tab=subscription&checkout=business',
 };
 
+/**
+ * Guards dashboard access based on subscription status.
+ * When NEXT_PUBLIC_ENABLE_PAYWALL=false (beta launch), all users
+ * get free unlimited access — no paywall is ever shown.
+ */
 export function SubscriptionGate({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const { sub, loading: subLoading } = useSubscription();
 
-  // Show a unified loading state: auth not ready OR subscription still fetching.
+  const paywallEnabled = ENABLE_PAYWALL;
+
   if (authLoading || subLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -24,30 +31,26 @@ export function SubscriptionGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Not logged in — let DashboardShell handle the redirect.
   if (!user) return <>{children}</>;
 
+  // Beta mode: free unlimited access — never show paywall.
+  // The Banner below is an opt-in visual complement rendered by
+  // the subscription-panel, not here.
+  if (!paywallEnabled) return <>{children}</>;
+
+  // ─── Wompi paywall (active when NEXT_PUBLIC_ENABLE_PAYWALL=true) ───
   const isActive = sub?.status === 'active';
   const isTrial = sub?.status === 'trial';
   const isExpired =
     sub?.status === 'expired' ||
     (sub?.status === 'trial' && (sub?.trialDaysLeft ?? 0) <= 0);
 
-  // Active subscription or trial — normal access.
   if (isActive || (isTrial && !isExpired)) {
     return <>{children}</>;
   }
 
-  // Only reach here after loading is done AND sub resolves to
-  // null or expired — no flicker because the loading gate above
-  // already showed a spinner during the async window.
-  if (!sub) {
-    // API returned no subscription at all (shouldn't happen — the API
-    // auto-creates a trial). Fallback to children gracefully.
-    return <>{children}</>;
-  }
+  if (!sub) return <>{children}</>;
 
-  // Trial expired or status is 'expired' — show paywall.
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md text-center space-y-6">
