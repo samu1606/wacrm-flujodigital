@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       .from('payments')
       .insert({
         plan: `alertas_${planKey}`,
-        amount: plan.cents,
+        amount_cents: plan.cents,
         reference,
         status: 'pending',
         metadata: { phone, product: 'alertas' },
