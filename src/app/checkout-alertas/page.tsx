@@ -58,7 +58,12 @@ export default function CheckoutAlertasPage() {
       }
 
       // Open Wompi widget
-      const checkout = new window.WidgetCheckout!({
+      if (!window.WidgetCheckout) {
+        setError('Widget de Wompi no cargado. Recarga la página.')
+        setLoading(false)
+        return
+      }
+      const checkout = new window.WidgetCheckout({
         currency: 'COP',
         amountInCents: plan === 'pro' ? 38_000_00 : 80_000_00,
         reference: data.reference,
@@ -69,7 +74,9 @@ export default function CheckoutAlertasPage() {
         },
       })
 
-      checkout.open((result: any) => {
+      console.log('[wompi-alertas] Opening widget with:', { currency: 'COP', amountInCents: plan === 'pro' ? 38_000_00 : 80_000_00, reference: data.reference, publicKey: data.publicKey?.slice(0,15)+'...' })
+      try {
+        checkout.open((result: any) => {
         const tx = result?.transaction
         console.log('[wompi-alertas] result:', result)
 
@@ -79,10 +86,16 @@ export default function CheckoutAlertasPage() {
           setError(result.error?.reason || 'Pago rechazado')
         }
         setLoading(false)
-      })
+        });
+      } catch (openErr: any) {
+        console.error('[wompi-alertas] open error:', openErr)
+        setError('Error al abrir modal Wompi')
+        setLoading(false)
+        return
+      }
     } catch (err: any) {
       console.error('[wompi-alertas] error:', err?.message || err)
-      setError(err?.message || 'Error al abrir Wompi')
+      setError(typeof err === 'string' ? err : err?.message || err?.type || JSON.stringify(err))
       setLoading(false)
     }
   }
