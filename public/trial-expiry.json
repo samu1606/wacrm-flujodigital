@@ -1,0 +1,34 @@
+{
+  "name": "Trial Expiry — Desactiva trials vencidos",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "hours", "hoursInterval": 6}]
+        }
+      },
+      "id": "d1e8a2b1-0001-4000-a000-000000000001",
+      "name": "Every 6 hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const http = this.helpers.httpRequest;\n\nconst SUPABASE_URL = 'https://zavabpchdvssvdnwtuyu.supabase.co';\nconst SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphdmFicGNoZHZzc3Zkbnd0dXl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNDA4NDgsImV4cCI6MjA5OTkxNjg0OH0.bGIex-jior3Q48OAwXRmuwJbt6SZ_MQMiyiieY4WDm4';\nconst headers = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };\n\n// 1. Deactivate expired trials (older than 7 days)\nconst deactivateUrl = SUPABASE_URL + '/rest/v1/rpc/deactivate_expired_trials';\n\ntry {\n  const deactivated = await http({\n    method: 'POST',\n    url: deactivateUrl,\n    headers\n  });\n  console.log('Deactivated:', JSON.stringify(deactivated));\n} catch (e) {\n  // RPC not found — fallback to direct update\n  console.log('RPC not available, trying direct update...');\n  \n  // 2. Find expired trials\n  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();\n  const expiredUrl = SUPABASE_URL + '/rest/v1/alert_subscribers?plan=eq.trial&active=eq.true&trial_start=lt.' + sevenDaysAgo + '&select=phone,product';\n  \n  try {\n    const expired = await http({ method: 'GET', url: expiredUrl, headers });\n    const list = Array.isArray(expired) ? expired : [];\n    console.log('Expired trials:', list.length);\n    \n    const EVO_URL = 'http://148.230.90.171:8096';\n    const EVO_KEY = 'wasapea-evo-key-2026';\n    \n    for (const sub of list) {\n      // Deactivate\n      const patchUrl = SUPABASE_URL + '/rest/v1/alert_subscribers?phone=eq.' + sub.phone + '&product=eq.' + sub.product;\n      await http({\n        method: 'PATCH',\n        url: patchUrl,\n        headers: { ...headers, 'Prefer': 'return=minimal' },\n        body: { active: false }\n      });\n      \n      // Send reminder\n      const productNames = { cryptotrader: '💰 CryptoTrader', forexalert: '💱 ForexAlert', goldtrack: '🥇 GoldTrack', secop: '📋 SECOP Alertas', trm: '💵 TRM Alertas', vigilante: '🛡️ Vigilante Digital' };\n      const name = productNames[sub.product] || sub.product;\n      const msg = `${name}\\n\\n⏰ *Tu prueba gratis de 7 días terminó.*\\n\\nPara seguir recibiendo alertas, activa tu plan:\\n👉 https://wasapeapro.com/pagar\\n\\n💳 Pago único de $9.000 COP por Nequi. Activación inmediata.`;\n      \n      try {\n        await http({\n          method: 'POST',\n          url: EVO_URL + '/message/sendText/wasapea-7c7a2c6c',\n          headers: { 'apikey': EVO_KEY, 'Content-Type': 'application/json' },\n          body: { number: sub.phone, text: msg }\n        });\n      } catch (err) {\n        console.log('Send error for', sub.phone);\n      }\n    }\n  } catch (err2) {\n    console.log('Query error:', err2.message);\n  }\n}\n\nreturn { processed: true };"
+      },
+      "id": "d1e8a2b1-0002-4000-a000-000000000002",
+      "name": "Check & Deactivate Expired",
+      "type": "n8n-nodes-base.code",
+      "position": [450, 300]
+    }
+  ],
+  "connections": {
+    "Every 6 hours": {
+      "main": [[{"node": "Check & Deactivate Expired", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "callerPolicy": "workflowsFromSameFolder"
+  },
+  "staticData": null
+}
