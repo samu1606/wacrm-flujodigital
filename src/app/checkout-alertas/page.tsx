@@ -24,11 +24,11 @@ export default function CheckoutAlertasPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, plan }),
       })
-      const data = await res.json()
+      const data = await res.json(); const redirect = data.paymentUrl || data.checkoutUrl
       if (data.error) {
         setError(data.detail || data.error)
       } else {
-        setCheckoutUrl(data.checkoutUrl)
+        setCheckoutUrl(redirect)
         setPlanName(data.planName)
         setAmount(data.amount)
       }

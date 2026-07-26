@@ -1,9 +1,7 @@
 /**
  * POST /api/wompi/checkout-alertas — Public checkout for alert plans.
- * Generates signed Wompi checkout URL (no HTML form, no payment-links API).
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { createHash } from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 const ALERT_PLANS: Record<string, { name: string; cents: number }> = {
@@ -33,33 +31,66 @@ export async function POST(request: NextRequest) {
     }
 
     const reference = `alertas-${planKey}-${phone}-${Date.now()}`;
-    const integrityKey = process.env.WOMPI_INTEGRITY_KEY || '';
-    const publicKey = process.env.WOMPI_PUBLIC_KEY || '';
-    const redirectUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://148.230.90.171:8095'}/checkout-alertas?paid=true`;
+    const privateKey = process.env.WOMPI_PRIVATE_KEY || '';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://wasapeapro.com';
 
-    // Build Wompi checkout URL
-    let checkoutUrl = `https://checkout.wompi.co/p/?public-key=${publicKey}&currency=COP&amount-in-cents=${plan.cents}&reference=${reference}&redirect-url=${encodeURIComponent(redirectUrl)}`;
+    // Try creating a payment link via Wompi API
+    const wompiRes = await fetch('https://api.wompi.co/v1/payment_links', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${privateKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: `${plan.name} — ${phone}`,
+        amount_in_cents: plan.cents,
+        currency: 'COP',
+        reference,
+        redirect_url: `${siteUrl}/checkout-alertas?paid=true`,
+        expires_at: new Date(Date.now() + 24 * 3600_000).toISOString(),
+      }),
+    });
 
-    // Integrity signature
-    if (integrityKey) {
-      const hash = createHash('sha256').update(`${reference}${plan.cents}COP${integrityKey}`).digest('hex');
-      checkoutUrl += `&signature:integrity=${hash}`;
+    const wompiData = await wompiRes.json();
+
+    if (!wompiRes.ok || wompiData.error) {
+      const reason = wompiData?.error?.reason || wompiData?.error?.type || JSON.stringify(wompiData);
+      console.error('[checkout-alertas] Wompi error:', reason);
+
+      // Fallback: build direct checkout URL
+      const publicKey = process.env.WOMPI_PUBLIC_KEY || '';
+      const checkoutUrl = `https://checkout.wompi.co/p/?public-key=${publicKey}&currency=COP&amount-in-cents=${plan.cents}&reference=${reference}&redirect-url=${encodeURIComponent(`${siteUrl}/checkout-alertas?paid=true`)}`;
+
+      // Save record anyway
+      const admin = supabaseAdmin();
+      await admin.from('payments').insert({
+        plan: `alertas_${planKey}`,
+        amount_cents: plan.cents,
+        reference,
+        status: 'pending',
+        metadata: { phone, product: 'alertas' },
+      }).select('id').maybeSingle();
+
+      return NextResponse.json({
+        checkoutUrl,
+        planName: plan.name,
+        amount: plan.cents / 100,
+        phone,
+        note: reason,
+      });
     }
 
-    // Save record
-    const admin = supabaseAdmin();
-    await admin.from('payments').insert({
-      plan: `alertas_${planKey}`,
-      amount_cents: plan.cents,
-      reference,
-      status: 'pending',
-      metadata: { phone, product: 'alertas' },
-    }).select('id').maybeSingle();
+    // Success: Wompi gave us a payment link
+    const paymentUrl = wompiData?.data?.url || wompiData?.data?.payment_url;
+
+    if (!paymentUrl) {
+      return NextResponse.json({ error: 'Wompi no devolvió URL de pago' }, { status: 502 });
+    }
 
     return NextResponse.json({
-      checkoutUrl,
+      paymentUrl,
+      reference,
       planName: plan.name,
-      amount: plan.cents / 100,
       phone,
     });
   } catch (e) {
