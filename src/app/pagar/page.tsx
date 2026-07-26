@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 
 const PRODUCTS: Record<string, { name: string; emoji: string; price: string; desc: string }> = {
@@ -13,7 +14,9 @@ const PRODUCTS: Record<string, { name: string; emoji: string; price: string; des
   pro: { name: 'Plan PRO', emoji: '⭐', price: '$29.000 COP', desc: 'Todos los productos + soporte prioritario' },
 };
 
-export default function PagarPage() {
+function PagarForm() {
+  const searchParams = useSearchParams();
+  const preselected = searchParams.get('producto') || '';
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -97,7 +100,7 @@ export default function PagarPage() {
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.field}>
             <label style={styles.label}>Producto</label>
-            <select name="product" required style={styles.select}>
+            <select name="product" required defaultValue={preselected} style={styles.select}>
               <option value="">Selecciona un producto...</option>
               {Object.entries(PRODUCTS).map(([key, p]) => (
                 <option key={key} value={key}>{p.emoji} {p.name} — {p.price}</option>
@@ -254,3 +257,11 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#52525b',
   },
 };
+
+export default function PagarPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#050508', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a1a1aa', fontFamily: 'system-ui' }}>Cargando...</div>}>
+      <PagarForm />
+    </Suspense>
+  );
+}
