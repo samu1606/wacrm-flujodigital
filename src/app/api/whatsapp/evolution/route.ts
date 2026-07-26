@@ -467,6 +467,13 @@ async function processMessage(
     fetchAndStoreInStorage(newMsg.id, instanceName, rawBody, accountId)
   }
 
+  // ================================================================
+  // Auto-subscribe: detect product keywords in incoming messages
+  // ================================================================
+  if (contentType === 'text' && contentText && phone) {
+    autoSubscribe(admin, phone, contentText)
+  }
+
   return NextResponse.json({
     status: 'ok',
     instance: instanceName,
@@ -476,6 +483,53 @@ async function processMessage(
     contentLen: contentText.length,
     event,
   })
+}
+
+// ================================================================
+// Auto-subscribe: detect product keywords and add to alert_subscribers
+// ================================================================
+async function autoSubscribe(admin: any, phone: string, message: string) {
+  const PRODUCT_KEYWORDS: Record<string, string[]> = {
+    cryptotrader: ['crypto', 'bitcoin', 'btc', 'eth', 'cryptotrader', 'cripto'],
+    forexalert: ['forex', 'divisa', 'eur', 'usd', 'forexalert', 'currency', 'currency'],
+    goldtrack: ['gold', 'oro', 'plata', 'silver', 'goldtrack', 'metal', 'precio'],
+    secop: ['secop', 'licitacion', 'licitación', 'contrato', 'contratacion'],
+    trm: ['trm', 'dolar', 'dólar', 'tasa', 'cambio', 'cop'],
+    vigilante: ['vigilante', 'monitor', 'monitoreo', 'cambio track', 'cambiotrack', 'monitorpro'],
+  }
+
+  const msgLower = message.toLowerCase()
+  let product: string | null = null
+
+  for (const [prod, keywords] of Object.entries(PRODUCT_KEYWORDS)) {
+    if (keywords.some(kw => msgLower.includes(kw))) {
+      product = prod
+      break
+    }
+  }
+
+  if (!product) return
+
+  try {
+    const { error } = await admin
+      .from('alert_subscribers')
+      .upsert({
+        phone,
+        product,
+        plan: 'free',
+        active: true,
+        config: {},
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'phone,product',
+      })
+
+    if (!error) {
+      console.log(`[evo] ✅ Auto-subscribed ${phone} to ${product}`)
+    }
+  } catch (e) {
+    // Table might not exist yet — ignore silently
+  }
 }
 
 // ================================================================

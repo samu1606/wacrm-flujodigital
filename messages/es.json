@@ -15,30 +15,31 @@
     "createAccount": "Crear cuenta"
   },
   "Sidebar": {
-    "title": "CRM para WhatsApp",
-    "dashboard": "Dashboard",
-    "inbox": "Bandeja",
-    "notifications": "Notificaciones",
-    "contacts": "Contactos",
-    "pipelines": "Pipeline",
-    "broadcasts": "Difusiones",
-    "automations": "Automatizaciones",
-    "flows": "Flujos",
     "aiAgents": "Asistente IA",
-    "settings": "Configuración",
+    "alertas": "Alertas",
+    "automations": "Automatizaciones",
     "beta": "Beta",
-    "unreadConversations": "{count} sin leer",
-    "unreadNotifications": "{count} sin leer",
-    "roleOwner": "Dueño",
-    "roleAdmin": "Admin",
-    "roleAgent": "Agente",
-    "roleViewer": "Observador",
+    "broadcasts": "Difusiones",
     "closeMenu": "Cerrar menú",
-    "defaultUser": "Usuario",
+    "contacts": "Contactos",
+    "dashboard": "Dashboard",
     "defaultAvatar": "Avatar",
+    "defaultUser": "Usuario",
+    "flows": "Flujos",
+    "inbox": "Bandeja",
     "menuProfile": "Perfil",
     "menuSettings": "Configuración",
-    "menuSignOut": "Cerrar sesión"
+    "menuSignOut": "Cerrar sesión",
+    "notifications": "Notificaciones",
+    "pipelines": "Pipeline",
+    "roleAdmin": "Admin",
+    "roleAgent": "Agente",
+    "roleOwner": "Dueño",
+    "roleViewer": "Observador",
+    "settings": "Configuración",
+    "title": "CRM para WhatsApp",
+    "unreadConversations": "{count} sin leer",
+    "unreadNotifications": "{count} sin leer"
   },
   "Header": {
     "dashboard": "Dashboard",
@@ -1126,16 +1127,46 @@
         "flow": "Control de flujo"
       },
       "nodes": {
-        "start": { "label": "Inicio", "blurb": "Punto de entrada del flujo" },
-        "send_message": { "label": "Enviar mensaje", "blurb": "Envía un mensaje de texto" },
-        "send_buttons": { "label": "Enviar botones", "blurb": "Envía botones de respuesta rápida" },
-        "send_list": { "label": "Enviar lista", "blurb": "Envía una lista de opciones" },
-        "send_media": { "label": "Enviar archivo", "blurb": "Envía imagen, video o documento" },
-        "collect_input": { "label": "Recolectar entrada", "blurb": "Pregunta y guarda la respuesta" },
-        "condition": { "label": "Si / Sino", "blurb": "Bifurca según una regla" },
-        "set_tag": { "label": "Etiquetar contacto", "blurb": "Agrega o quita una etiqueta" },
-        "handoff": { "label": "Transferir a agente", "blurb": "Pasa la conversación a un humano" },
-        "end": { "label": "Fin", "blurb": "Termina el flujo" }
+        "start": {
+          "label": "Inicio",
+          "blurb": "Punto de entrada del flujo"
+        },
+        "send_message": {
+          "label": "Enviar mensaje",
+          "blurb": "Envía un mensaje de texto"
+        },
+        "send_buttons": {
+          "label": "Enviar botones",
+          "blurb": "Envía botones de respuesta rápida"
+        },
+        "send_list": {
+          "label": "Enviar lista",
+          "blurb": "Envía una lista de opciones"
+        },
+        "send_media": {
+          "label": "Enviar archivo",
+          "blurb": "Envía imagen, video o documento"
+        },
+        "collect_input": {
+          "label": "Recolectar entrada",
+          "blurb": "Pregunta y guarda la respuesta"
+        },
+        "condition": {
+          "label": "Si / Sino",
+          "blurb": "Bifurca según una regla"
+        },
+        "set_tag": {
+          "label": "Etiquetar contacto",
+          "blurb": "Agrega o quita una etiqueta"
+        },
+        "handoff": {
+          "label": "Transferir a agente",
+          "blurb": "Pasa la conversación a un humano"
+        },
+        "end": {
+          "label": "Fin",
+          "blurb": "Termina el flujo"
+        }
       }
     },
     "validation": {
