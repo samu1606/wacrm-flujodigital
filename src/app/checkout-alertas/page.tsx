@@ -6,7 +6,7 @@ export default function CheckoutAlertasPage() {
   const [phone, setPhone] = useState('')
   const [plan, setPlan] = useState('pro')
   const [loading, setLoading] = useState(false)
-  const [wompiUrl, setWompiUrl] = useState<string | null>(null)
+  const [setCheckoutUrl, setWompiUrl] = useState<string | null>(null)
   const [planName, setPlanName] = useState('')
   const [amount, setAmount] = useState(0)
   const [error, setError] = useState('')
@@ -68,7 +68,7 @@ export default function CheckoutAlertasPage() {
           </p>
         </div>
 
-        {!wompiUrl ? (
+        {!setCheckoutUrl ? (
           <>
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', fontSize: '.85rem', fontWeight: 600, marginBottom: '.35rem', color: '#a1a1aa' }}>
@@ -164,7 +164,7 @@ export default function CheckoutAlertasPage() {
             </p>
 
             <a
-              href={wompiUrl}
+              href={setCheckoutUrl}
               style={{
                 display: 'block',
                 width: '100%',
@@ -183,7 +183,7 @@ export default function CheckoutAlertasPage() {
             </a>
 
             <button
-              onClick={() => { setWompiUrl(null); setError('') }}
+              onClick={() => { setCheckoutUrl(null); setError('') }}
               style={{
                 marginTop: '1rem',
                 background: 'none',
