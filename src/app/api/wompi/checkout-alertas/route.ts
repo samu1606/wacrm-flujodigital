@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       console.error('[checkout-alertas] Wompi API error:', data);
       return NextResponse.json({
         error: 'Wompi rechazó la solicitud',
-        detail: data?.error?.reason || data?.error?.type || 'Error desconocido',
+        detail: data?.error?.messages?.join?.('; ') || data?.error?.type || JSON.stringify(data) || 'Error desconocido',
       }, { status: 502 });
     }
 
