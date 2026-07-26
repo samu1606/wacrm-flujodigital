@@ -1,16 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { useSubscription } from '@/hooks/use-subscription';
 import { Loader2, Crown, Clock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-interface SubInfo {
-  plan: string;
-  status: string;
-  trialDaysLeft: number;
-  currentPeriodEnd?: string;
-}
 
 const PLAN_LINKS: Record<string, string> = {
   emprendedor: '/settings?tab=subscription&checkout=emprendedor',
@@ -19,32 +12,11 @@ const PLAN_LINKS: Record<string, string> = {
 };
 
 export function SubscriptionGate({ children }: { children: React.ReactNode }) {
-  const { user, loading: authLoading, accountId } = useAuth();
-  const [sub, setSub] = useState<SubInfo | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();
+  const { sub, loading: subLoading } = useSubscription();
 
-  const fetchSub = useCallback(async () => {
-    try {
-      const res = await fetch('/api/wompi/subscription');
-      const data = await res.json();
-      if (res.ok) setSub(data);
-    } catch {
-      /* ignore — will retry */
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user || !accountId) {
-      setLoading(false);
-      return;
-    }
-    fetchSub();
-  }, [authLoading, user, accountId, fetchSub]);
-
-  // Still loading auth or subscription
-  if (authLoading || (loading && !!user)) {
+  // Show a unified loading state: auth not ready OR subscription still fetching.
+  if (authLoading || subLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <Loader2 className="size-8 animate-spin text-primary" />
@@ -52,22 +24,30 @@ export function SubscriptionGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Not logged in — let DashboardShell handle the redirect
+  // Not logged in — let DashboardShell handle the redirect.
   if (!user) return <>{children}</>;
-
-  // Still loading sub
-  if (loading) return null;
 
   const isActive = sub?.status === 'active';
   const isTrial = sub?.status === 'trial';
-  const isExpired = sub?.status === 'expired' || (sub?.status === 'trial' && (sub?.trialDaysLeft ?? 0) <= 0);
+  const isExpired =
+    sub?.status === 'expired' ||
+    (sub?.status === 'trial' && (sub?.trialDaysLeft ?? 0) <= 0);
 
-  // Active subscription or trial — normal access
+  // Active subscription or trial — normal access.
   if (isActive || (isTrial && !isExpired)) {
     return <>{children}</>;
   }
 
-  // Trial expired — show paywall
+  // Only reach here after loading is done AND sub resolves to
+  // null or expired — no flicker because the loading gate above
+  // already showed a spinner during the async window.
+  if (!sub) {
+    // API returned no subscription at all (shouldn't happen — the API
+    // auto-creates a trial). Fallback to children gracefully.
+    return <>{children}</>;
+  }
+
+  // Trial expired or status is 'expired' — show paywall.
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md text-center space-y-6">

@@ -1,22 +1,15 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2, Crown, Zap, Clock, CheckCircle2, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { useSubscription } from '@/hooks/use-subscription';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SettingsPanelHead } from './settings-panel-head';
-
-interface SubInfo {
-  plan: string;
-  status: string;
-  trialDaysLeft: number;
-  trialStart?: string;
-  currentPeriodEnd?: string;
-}
 
 const PLAN_DETAILS: Record<string, { name: string; price: string; features: string[] }> = {
   free: {
@@ -49,36 +42,23 @@ declare global {
 
 export function SubscriptionPanel() {
   const { user, accountId, loading: authLoading } = useAuth();
+  const { sub, loading: subLoading, refetch: refetchSub } = useSubscription();
   const searchParams = useSearchParams();
-  const checkoutPlan = searchParams.get('checkout'); // Auto-trigger from landing page
+  const checkoutPlan = searchParams.get('checkout');
   const autoTriggered = useRef(false);
-  const [loading, setLoading] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const [sub, setSub] = useState<SubInfo | null>(null);
   const [widgetReady, setWidgetReady] = useState(false);
 
-  const fetchSub = useCallback(async () => {
-    try {
-      const res = await fetch('/api/wompi/subscription');
-      const data = await res.json();
-      if (res.ok) setSub(data);
-    } catch { /* */ }
-    setLoading(false);
-  }, []);
 
-  useEffect(() => {
-    if (authLoading) return;
-    fetchSub();
-  }, [authLoading, fetchSub]);
 
   // Auto-trigger checkout when arriving from landing page with ?checkout=plan
   useEffect(() => {
-    if (!checkoutPlan || autoTriggered.current || authLoading || loading) return;
+    if (!checkoutPlan || autoTriggered.current || authLoading || subLoading) return;
     autoTriggered.current = true;
     // Small delay to let widget load
     const t = setTimeout(() => handleCheckout(checkoutPlan), 500);
     return () => clearTimeout(t);
-  }, [checkoutPlan, authLoading, loading, widgetReady]);
+  }, [checkoutPlan, authLoading, subLoading, widgetReady]);
 
   // Load Wompi widget script once
   useEffect(() => {
@@ -141,7 +121,7 @@ export function SubscriptionPanel() {
           activateSubscriptionAfterPayment(plan, data.reference, tx.id);
         } else if (tx?.status === 'PENDING') {
           toast.info('Pago pendiente. Te notificaremos.');
-          setTimeout(fetchSub, 5000);
+          setTimeout(refetchSub, 5000);
         } else {
           toast.error('Pago no completado');
         }
@@ -164,21 +144,18 @@ export function SubscriptionPanel() {
       const result = await res.json();
       if (result.status === 'ok') {
         console.log('[wompi] Subscription activated via API:', result.plan);
-        // Give DB a moment, then refetch
-        setTimeout(fetchSub, 2000);
+        setTimeout(refetchSub, 2000);
       } else {
         console.warn('[wompi] Activate API returned:', result);
-        // Still refetch — webhook might have handled it
-        setTimeout(fetchSub, 3000);
+        setTimeout(refetchSub, 3000);
       }
     } catch (err) {
       console.error('[wompi] Activate API call failed:', err);
-      // Still refetch — webhook might have handled it
-      setTimeout(fetchSub, 3000);
+      setTimeout(refetchSub, 3000);
     }
   }
 
-  if (loading) {
+  if (subLoading) {
     return (
       <section>
         <SettingsPanelHead title="Suscripción" description="Gestiona tu plan y pagos" />
