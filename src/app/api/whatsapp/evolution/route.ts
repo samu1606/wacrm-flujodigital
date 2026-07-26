@@ -549,8 +549,10 @@ async function autoSubscribe(admin: any, phone: string, message: string) {
       '💵 *TRM Alertas* — Tasa de cambio COP\n' +
       '📋 *SECOP Alertas* — Licitaciones Colombia\n' +
       '🛡️ *Vigilante Digital* — Monitoreo web\n\n' +
+      '🎁 *7 días gratis* — Después $9.000 COP/mes por producto.\n' +
       '📱 Envía el nombre del producto que quieres.\n' +
-      '❌ Para cancelar: "cancelar CryptoTrader"'
+      '💳 Paga en: https://wasapeapro.com/pagar\n' +
+      '❌ Cancelar: "cancelar CryptoTrader"'
       try {
         await sendWhatsApp(phone, help)
       } catch (e) { /* ignore */ }
@@ -566,16 +568,17 @@ async function autoSubscribe(admin: any, phone: string, message: string) {
       .upsert({
         phone,
         product,
-        plan: 'free',
+        plan: 'trial',
         active: true,
         config: {},
+        trial_start: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }, {
         onConflict: 'phone,product',
       })
 
     if (!error) {
-      const reply = `${info.emoji} *¡Suscrito a ${info.name}!*\n\nRecibirás las alertas directo en WhatsApp.\n\n📱 +${phone}\n📦 Plan: *GRATIS*\n\n🌐 *Ver productos:* https://wasapeapro.com/productos\n\n🔄 *Upgrade a Pro:* ${process.env.NEXT_PUBLIC_SITE_URL || 'https://wasapeapro.com'}/productos?phone=${phone}\n❌ Cancelar: "cancelar ${info.name}"`
+      const reply = `${info.emoji} *¡Suscrito a ${info.name}!*\n\nRecibirás alertas *GRATIS por 7 días*. Después, el servicio se pausa automáticamente.\n\n📱 +${phone}\n⏳ Plan: *Prueba 7 días*\n\n💳 *Activar para siempre:* https://wasapeapro.com/pagar\n🌐 *Ver productos:* https://wasapeapro.com/productos\n❌ Cancelar: "cancelar ${info.name}"`
       await sendWhatsApp(phone, reply)
       console.log(`[evo] ✅ Auto-subscribed ${phone} to ${product}`)
     }
