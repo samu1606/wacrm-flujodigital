@@ -78,9 +78,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: 'ok', event, reason: 'not_message_event' })
   }
 
-  // Ignore truly outbound messages
-  if (data?.key?.fromMe === true) {
-    return NextResponse.json({ status: 'ignored', reason: 'outbound' })
+  // Outbound messages (sent from phone): process them as agent messages.
+  // Non-message status updates (read receipts, etc.) are still skipped.
+  const isOutbound = data?.key?.fromMe === true
+
+  // Skip non-message status stubs (delivery receipts, read markers, etc.)
+  if (isOutbound && !data?.message) {
+    return NextResponse.json({ status: 'ignored', reason: 'outbound_status' })
   }
 
   // ================================================================
@@ -120,7 +124,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: 'error', reason: 'no_user_for_account' }, { status: 500 })
   }
 
-  return await processMessage(admin, data, rawBody, event, accountId, configUserId, instanceName)
+  return await processMessage(admin, data, rawBody, event, accountId, configUserId, instanceName, isOutbound)
 }
 
 // ================================================================
@@ -225,12 +229,14 @@ async function processMessage(
   accountId: string,
   userId: string,
   instanceName: string,
+  isOutbound: boolean,
 ) {
   const key = data?.key || {}
   const msg = data?.message || {}
   const remoteJid = (key.remoteJid || '').replace('@s.whatsapp.net', '')
   const phone = normalizePhone(remoteJid)
-  const pushName = data?.pushName || 'WhatsApp Contact'
+  // For outbound, use our own pushName; for inbound, use sender's
+  const pushName = isOutbound ? 'Yo' : (data?.pushName || 'WhatsApp Contact')
   const msgId = key.id || ''
 
   if (!phone && !msgId) {
@@ -253,12 +259,16 @@ async function processMessage(
     .limit(1)
 
   let contactId: string
+  // For outbound, if contact exists keep its name; if new, use phone as fallback
+  const contactName = isOutbound
+    ? (existingContacts?.[0]?.name || phone)
+    : pushName
   if (existingContacts && existingContacts.length > 0) {
     contactId = existingContacts[0].id
   } else {
     const { data: newContact, error: cErr } = await admin
       .from('contacts')
-      .insert({ phone, name: pushName, account_id: accountId, user_id: userId })
+      .insert({ phone, name: contactName, account_id: accountId, user_id: userId })
       .select('id')
       .single()
     if (cErr) {
@@ -279,7 +289,8 @@ async function processMessage(
   let unreadCount = 0
   if (existingConvs && existingConvs.length > 0) {
     convId = existingConvs[0].id
-    unreadCount = (existingConvs[0].unread_count || 0) + 1
+    // Only increment unread for inbound messages from the customer
+    unreadCount = isOutbound ? 0 : (existingConvs[0].unread_count || 0) + 1
   } else {
     const { data: newConv, error: convErr } = await admin
       .from('conversations')
@@ -291,7 +302,7 @@ async function processMessage(
       return NextResponse.json({ status: 'error', error: 'conv_insert: ' + convErr.message }, { status: 500 })
     }
     convId = newConv.id
-    unreadCount = 1
+    unreadCount = isOutbound ? 0 : 1
   }
 
   // Build message content
@@ -421,17 +432,18 @@ async function processMessage(
     return NextResponse.json({ status: 'skipped', reason: 'empty_content' })
   }
 
-  // Insert message — metadata is stored separately in case column doesn't exist yet (migration 018)
+  // Insert message
+  const senderType = isOutbound ? 'agent' : 'customer'
   const { data: newMsg, error: msgErr } = await admin
     .from('messages')
     .insert({
       conversation_id: convId,
-      sender_type: 'customer',
+      sender_type: senderType,
       content_type: contentType,
       content_text: contentText,
       media_url: mediaUrl,
       message_id: msgId,
-      status: 'delivered',
+      status: isOutbound ? 'sent' : 'delivered',
     })
     .select('id')
     .single()
@@ -441,15 +453,22 @@ async function processMessage(
     return NextResponse.json({ status: 'error', error: 'msg_insert: ' + msgErr.message }, { status: 500 })
   }
 
-  // Update conversation
+  // Update conversation (outbound: don't increment unread, mark as replied)
+  const convUpdate: any = {
+    last_message_text: contentText || `[${contentType}]`,
+    last_message_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+  if (!isOutbound) {
+    convUpdate.unread_count = unreadCount
+  } else {
+    // Outbound message → conversation was replied to, reset unread
+    convUpdate.unread_count = 0
+  }
+
   await admin
     .from('conversations')
-    .update({
-      last_message_text: contentText || `[${contentType}]`,
-      last_message_at: new Date().toISOString(),
-      unread_count: unreadCount,
-      updated_at: new Date().toISOString(),
-    })
+    .update(convUpdate)
     .eq('id', convId)
 
   // Try to store metadata (silently fails if column doesn't exist yet)
@@ -459,18 +478,13 @@ async function processMessage(
     } catch { /* metadata column may not exist yet */ }
   }
 
-  // ================================================================
-  // For media messages: fire-and-forget fetch base64 from Evolution
-  // to make media permanently available (WhatsApp CDN URLs expire)
-  // ================================================================
-  if ((contentType === 'image' || contentType === 'video' || contentType === 'audio' || contentType === 'document') && mediaUrl && newMsg?.id) {
+  // Media storage: only for inbound media (outbound already on sender's device)
+  if (!isOutbound && (contentType === 'image' || contentType === 'video' || contentType === 'audio' || contentType === 'document') && mediaUrl && newMsg?.id) {
     fetchAndStoreInStorage(newMsg.id, instanceName, rawBody, accountId)
   }
 
-  // ================================================================
-  // Auto-subscribe: detect product keywords in incoming messages
-  // ================================================================
-  if (contentType === 'text' && contentText && phone) {
+  // Auto-subscribe: only for inbound text messages
+  if (!isOutbound && contentType === 'text' && contentText && phone) {
     autoSubscribe(admin, phone, contentText)
   }
 
