@@ -489,26 +489,60 @@ async function processMessage(
 // Auto-subscribe: detect product keywords and add to alert_subscribers
 // ================================================================
 async function autoSubscribe(admin: any, phone: string, message: string) {
-  const PRODUCT_KEYWORDS: Record<string, string[]> = {
-    cryptotrader: ['crypto', 'bitcoin', 'btc', 'eth', 'cryptotrader', 'cripto'],
-    forexalert: ['forex', 'divisa', 'eur', 'usd', 'forexalert', 'currency', 'currency'],
-    goldtrack: ['gold', 'oro', 'plata', 'silver', 'goldtrack', 'metal', 'precio'],
-    secop: ['secop', 'licitacion', 'licitación', 'contrato', 'contratacion'],
-    trm: ['trm', 'dolar', 'dólar', 'tasa', 'cambio', 'cop'],
-    vigilante: ['vigilante', 'monitor', 'monitoreo', 'cambio track', 'cambiotrack', 'monitorpro'],
+  const PRODUCTS: Record<string, { keywords: string[]; name: string; emoji: string }> = {
+    cryptotrader: { keywords: ['crypto', 'bitcoin', 'btc', 'eth', 'cryptotrader', 'cripto'], name: 'CryptoTrader', emoji: '💰' },
+    forexalert: { keywords: ['forex', 'divisa', 'eur', 'usd', 'forexalert', 'currency'], name: 'ForexAlert', emoji: '💱' },
+    goldtrack: { keywords: ['gold', 'oro', 'plata', 'silver', 'goldtrack', 'metal', 'precio'], name: 'GoldTrack', emoji: '🥇' },
+    secop: { keywords: ['secop', 'licitacion', 'licitación', 'contrato', 'contratacion'], name: 'SECOP Alertas', emoji: '📋' },
+    trm: { keywords: ['trm', 'dolar', 'dólar', 'tasa', 'cambio', 'cop'], name: 'TRM Alertas', emoji: '💵' },
+    vigilante: { keywords: ['vigilante', 'monitor', 'monitoreo', 'cambiotrack', 'monitorpro'], name: 'Vigilante Digital', emoji: '🛡️' },
   }
 
   const msgLower = message.toLowerCase()
-  let product: string | null = null
 
-  for (const [prod, keywords] of Object.entries(PRODUCT_KEYWORDS)) {
-    if (keywords.some(kw => msgLower.includes(kw))) {
+  // Handle unsubscribe
+  if (msgLower.includes('cancelar') || msgLower.includes('cancel') || msgLower.includes('baja') || msgLower.includes('parar')) {
+    for (const [prod, info] of Object.entries(PRODUCTS)) {
+      if (info.keywords.some(kw => msgLower.includes(kw))) {
+        try {
+          await admin.from('alert_subscribers').delete().eq('phone', phone).eq('product', prod)
+          const reply = `${info.emoji} Has cancelado *${info.name}*.\n\nYa no recibirás estas alertas. Si quieres reactivarlas, envía "Quiero ${info.name}"`
+          await sendWhatsApp(phone, reply)
+          console.log(`[evo] ❌ Unsubscribed ${phone} from ${prod}`)
+          return
+        } catch (e) { /* ignore */ }
+      }
+    }
+    return
+  }
+
+  // Detect product
+  let product: string | null = null
+  for (const [prod, info] of Object.entries(PRODUCTS)) {
+    if (info.keywords.some(kw => msgLower.includes(kw))) {
       product = prod
       break
     }
   }
 
-  if (!product) return
+  if (!product) {
+    // Send help message
+    const help = '👋 *¡Hola! Soy Alertas PRO*\n\nEstos son los productos disponibles:\n\n' +
+      '💰 *CryptoTrader* — BTC, ETH, USDT\n' +
+      '💱 *ForexAlert* — Divisas mundiales\n' +
+      '🥇 *GoldTrack* — Metales preciosos\n' +
+      '💵 *TRM Alertas* — Tasa de cambio COP\n' +
+      '📋 *SECOP Alertas* — Licitaciones Colombia\n' +
+      '🛡️ *Vigilante Digital* — Monitoreo web\n\n' +
+      '📱 Envía el nombre del producto que quieres.\n' +
+      '❌ Para cancelar: "cancelar CryptoTrader"'
+    try {
+      await sendWhatsApp(phone, help)
+    } catch (e) { /* ignore */ }
+    return
+  }
+
+  const info = PRODUCTS[product]
 
   try {
     const { error } = await admin
@@ -525,11 +559,24 @@ async function autoSubscribe(admin: any, phone: string, message: string) {
       })
 
     if (!error) {
+      const reply = `${info.emoji} *¡Suscrito a ${info.name}!*\n\nRecibirás las alertas directo en WhatsApp.\n\n📱 +${phone}\n📦 Plan: *GRATIS*\n\nPara cancelar: "cancelar ${info.name}"\nPara configurar umbrales: visita alertas.148-230-90-171.nip.io`
+      await sendWhatsApp(phone, reply)
       console.log(`[evo] ✅ Auto-subscribed ${phone} to ${product}`)
     }
   } catch (e) {
     // Table might not exist yet — ignore silently
+    console.error(`[evo] Auto-subscribe error:`, e)
   }
+}
+
+// Helper to send WhatsApp message via Evolution API
+async function sendWhatsApp(phone: string, text: string) {
+  if (!EVO_URL || !EVO_KEY) return
+  await fetch(`${EVO_URL}/message/sendText/wasapea-7c7a2c6c`, {
+    method: 'POST',
+    headers: { 'apikey': EVO_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ number: phone, text }),
+  })
 }
 
 // ================================================================
