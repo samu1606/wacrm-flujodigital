@@ -82,7 +82,7 @@ export default function CheckoutAlertasPage() {
       })
     } catch (err: any) {
       console.error('[wompi-alertas] error:', err?.message || err)
-      setError('Error al abrir el checkout')
+      setError(err?.message || 'Error al abrir Wompi')
       setLoading(false)
     }
   }
