@@ -6,7 +6,7 @@ export default function CheckoutAlertasPage() {
   const [phone, setPhone] = useState('')
   const [plan, setPlan] = useState('pro')
   const [loading, setLoading] = useState(false)
-  const [setCheckoutUrl, setWompiUrl] = useState<string | null>(null)
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
   const [planName, setPlanName] = useState('')
   const [amount, setAmount] = useState(0)
   const [error, setError] = useState('')
@@ -28,12 +28,12 @@ export default function CheckoutAlertasPage() {
       if (data.error) {
         setError(data.detail || data.error)
       } else {
-        setWompiUrl(data.paymentUrl)
+        setCheckoutUrl(data.checkoutUrl)
         setPlanName(data.planName)
-        setAmount(getAmount(plan))
+        setAmount(data.amount)
       }
     } catch (e) {
-      setError('Error al conectar con Wompi')
+      setError('Error al conectar con el servidor')
     } finally {
       setLoading(false)
     }
@@ -68,7 +68,7 @@ export default function CheckoutAlertasPage() {
           </p>
         </div>
 
-        {!setCheckoutUrl ? (
+        {!checkoutUrl ? (
           <>
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', fontSize: '.85rem', fontWeight: 600, marginBottom: '.35rem', color: '#a1a1aa' }}>
@@ -146,7 +146,7 @@ export default function CheckoutAlertasPage() {
                 transition: 'all .2s',
               }}
             >
-              {loading ? 'Conectando con Wompi...' : `Pagar con Wompi →`}
+              {loading ? 'Generando link...' : `Pagar con Wompi →`}
             </button>
           </>
         ) : (
@@ -164,7 +164,8 @@ export default function CheckoutAlertasPage() {
             </p>
 
             <a
-              href={setCheckoutUrl}
+              href={checkoutUrl}
+              rel="noreferrer"
               style={{
                 display: 'block',
                 width: '100%',
@@ -183,7 +184,7 @@ export default function CheckoutAlertasPage() {
             </a>
 
             <button
-              onClick={() => { setCheckoutUrl(null); setError('') }}
+              onClick={() => { setCheckoutUrl(null); setError(''); }}
               style={{
                 marginTop: '1rem',
                 background: 'none',
