@@ -530,30 +530,6 @@ async function autoSubscribe(admin: any, phone: string, message: string) {
     return
   }
 
-  // Handle payment confirmation: "Pagué CryptoTrader" → instant PRO activation
-  if (msgLower.includes('pagué') || msgLower.includes('pague')) {
-    for (const [prod, info] of Object.entries(PRODUCTS)) {
-      if (info.keywords.some(kw => msgLower.includes(kw))) {
-        try {
-          await admin
-            .from('alert_subscribers')
-            .update({ plan: 'pro', active: true, updated_at: new Date().toISOString() })
-            .eq('phone', phone)
-            .eq('product', prod)
-
-          const reply = `${info.emoji} *¡Pago confirmado para ${info.name}!*\n\n✅ Tu suscripción PRO está activa.\n\nSeguirás recibiendo alertas sin interrupción. Gracias 🫡`
-          await sendWhatsApp(phone, reply)
-          console.log(`[evo] 💳 Payment activated ${phone} → ${prod}`)
-          return
-        } catch (e) { /* ignore */ }
-      }
-    }
-    // "Pagué" sin producto → mandar instrucciones
-    const payReply = '💳 *Para activar tu plan:*\n\n1️⃣ Transfiere $9.000 COP por Nequi al 3173662752\n2️⃣ Envía "Pagué CryptoTrader" (o el producto que quieras)\n3️⃣ Se activa al instante 🚀\n\n👉 O escanea el QR: https://wasapeapro.com/pagar'
-    await sendWhatsApp(phone, payReply)
-    return
-  }
-
   // Detect product
   let product: string | null = null
   for (const [prod, info] of Object.entries(PRODUCTS)) {
@@ -575,7 +551,7 @@ async function autoSubscribe(admin: any, phone: string, message: string) {
       '🛡️ *Vigilante Digital* — Monitoreo web\n\n' +
       '🎁 *7 días gratis* — Después $9.000 COP por producto.\n' +
       '📱 Envía "Quiero CryptoTrader" para empezar.\n' +
-      '💳 Paga y escribe "Pagué CryptoTrader" para activar PRO.\n' +
+      '💳 Paga y activa en: https://wasapeapro.com/pagar\n' +
       '❌ Cancelar: "cancelar CryptoTrader"'
       try {
         await sendWhatsApp(phone, help)
@@ -602,7 +578,7 @@ async function autoSubscribe(admin: any, phone: string, message: string) {
       })
 
     if (!error) {
-      const reply = `${info.emoji} *¡Suscrito a ${info.name}!*\n\nRecibirás alertas *GRATIS por 7 días*. Después, el servicio se pausa automáticamente.\n\n📱 +${phone}\n⏳ Plan: *Prueba 7 días*\n\n💳 *Activar para siempre:* Paga $9.000 por Nequi al 3173662752 y escribe "Pagué ${info.name}"\n🌐 Productos: https://wasapeapro.com/productos\n❌ Cancelar: "cancelar ${info.name}"`
+      const reply = `${info.emoji} *¡Suscrito a ${info.name}!*\n\nRecibirás alertas *GRATIS por 7 días*. Después, el servicio se pausa automáticamente.\n\n📱 +${phone}\n⏳ Plan: *Prueba 7 días*\n\n💳 *Activar para siempre:* https://wasapeapro.com/pagar\n🌐 Productos: https://wasapeapro.com/productos\n❌ Cancelar: "cancelar ${info.name}"`
       await sendWhatsApp(phone, reply)
       console.log(`[evo] ✅ Auto-subscribed ${phone} to ${product}`)
     }
