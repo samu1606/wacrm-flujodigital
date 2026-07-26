@@ -578,7 +578,7 @@ async function autoSubscribe(admin: any, phone: string, message: string) {
       })
 
     if (!error) {
-      const reply = `${info.emoji} *¡Suscrito a ${info.name}!*\n\nRecibirás alertas *GRATIS por 7 días*. Después, el servicio se pausa automáticamente.\n\n📱 +${phone}\n⏳ Plan: *Prueba 7 días*\n\n💳 *Activar para siempre:* https://wasapeapro.com/pagar?producto=${prod}\n🌐 Productos: https://wasapeapro.com/productos\n❌ Cancelar: "cancelar ${info.name}"`
+      const reply = `${info.emoji} *¡Suscrito a ${info.name}!*\n\nRecibirás alertas *GRATIS por 7 días*. Después, el servicio se pausa automáticamente.\n\n📱 +${phone}\n⏳ Plan: *Prueba 7 días*\n\n💳 *Activar para siempre:* https://wasapeapro.com/pagar?producto=${product}\n🌐 Productos: https://wasapeapro.com/productos\n❌ Cancelar: "cancelar ${info.name}"`
       await sendWhatsApp(phone, reply)
       console.log(`[evo] ✅ Auto-subscribed ${phone} to ${product}`)
     }
