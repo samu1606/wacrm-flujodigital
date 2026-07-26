@@ -6,7 +6,9 @@ export default function CheckoutAlertasPage() {
   const [phone, setPhone] = useState('')
   const [plan, setPlan] = useState('pro')
   const [loading, setLoading] = useState(false)
-  const [wompiData, setWompiData] = useState<any>(null)
+  const [wompiUrl, setWompiUrl] = useState<string | null>(null)
+  const [planName, setPlanName] = useState('')
+  const [amount, setAmount] = useState(0)
   const [error, setError] = useState('')
 
   const handleCheckout = async () => {
@@ -24,9 +26,11 @@ export default function CheckoutAlertasPage() {
       })
       const data = await res.json()
       if (data.error) {
-        setError(data.error)
+        setError(data.detail || data.error)
       } else {
-        setWompiData(data)
+        setWompiUrl(data.paymentUrl)
+        setPlanName(data.planName)
+        setAmount(getAmount(plan))
       }
     } catch (e) {
       setError('Error al conectar con Wompi')
@@ -34,6 +38,8 @@ export default function CheckoutAlertasPage() {
       setLoading(false)
     }
   }
+
+  const getAmount = (p: string) => p === 'pro' ? 38000 : 80000
 
   return (
     <div style={{
@@ -62,7 +68,7 @@ export default function CheckoutAlertasPage() {
           </p>
         </div>
 
-        {!wompiData ? (
+        {!wompiUrl ? (
           <>
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', fontSize: '.85rem', fontWeight: 600, marginBottom: '.35rem', color: '#a1a1aa' }}>
@@ -140,55 +146,44 @@ export default function CheckoutAlertasPage() {
                 transition: 'all .2s',
               }}
             >
-              {loading ? 'Conectando...' : `Pagar con Wompi →`}
+              {loading ? 'Conectando con Wompi...' : `Pagar con Wompi →`}
             </button>
           </>
         ) : (
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>💳</div>
             <h2 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '.5rem' }}>
-              {wompiData.planName}
+              {planName}
             </h2>
             <p style={{ color: '#a855f7', fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem' }}>
-              ${(wompiData.amount / 100).toLocaleString('es-CO')} COP
+              ${amount.toLocaleString('es-CO')} COP
             </p>
             <p style={{ color: '#a1a1aa', fontSize: '.8rem', marginBottom: '2rem' }}>
               Serás redirigido a Wompi para completar el pago.
               Al confirmar, tu plan se activa automáticamente.
             </p>
 
-            {/* Wompi Button */}
-            <form
-              action="https://checkout.wompi.co/p/"
-              method="GET"
+            <a
+              href={wompiUrl}
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '1rem',
+                background: '#a855f7',
+                borderRadius: '12px',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '1.05rem',
+                cursor: 'pointer',
+                textDecoration: 'none',
+                textAlign: 'center',
+              }}
             >
-              <input type="hidden" name="public-key" value={wompiData.wompiPublicKey} />
-              <input type="hidden" name="currency" value="COP" />
-              <input type="hidden" name="amount-in-cents" value={wompiData.amount} />
-              <input type="hidden" name="reference" value={wompiData.reference} />
-              <input type="hidden" name="integrity" value={wompiData.integrity} />
-              <input type="hidden" name="signature:integrity" value={wompiData.integrity} />
-              <input type="hidden" name="redirect-url" value={`http://148.230.90.171:8095/checkout-alertas?paid=true&phone=${wompiData.phone}`} />
-              <button
-                type="submit"
-                style={{
-                  width: '100%',
-                  padding: '1rem',
-                  background: '#a855f7',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: '1.05rem',
-                  cursor: 'pointer',
-                }}
-              >
-                Ir a Wompi para pagar →
-              </button>
-            </form>
+              Ir a Wompi para pagar →
+            </a>
 
             <button
-              onClick={() => setWompiData(null)}
+              onClick={() => { setWompiUrl(null); setError('') }}
               style={{
                 marginTop: '1rem',
                 background: 'none',

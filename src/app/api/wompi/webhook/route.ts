@@ -113,6 +113,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (!payment) {
+    // Check if this is an alertas payment (payment link — no payments record)
+    if (reference?.startsWith('alertas-') && status === 'APPROVED') {
+      await upgradeAlertSubscriberFromRef(reference);
+    }
     console.warn('[wompi/webhook] Payment not found for tx:', txId, 'ref:', reference);
     return NextResponse.json({ status: 'skipped', reason: 'unknown' });
   }
@@ -169,4 +173,34 @@ async function upgradeAlertSubscriber(payment: any) {
   }
 
   console.log(`[wompi/webhook] ✅ Alert upgrade: ${phone} → ${alertPlan}`);
+}
+
+async function upgradeAlertSubscriberFromRef(reference: string) {
+  const admin = supabaseAdmin();
+
+  // reference format: alertas-pro-573001234567-1234567890
+  const refParts = reference.split('-');
+  const alertPlan = refParts[1] || 'pro';
+  const phone = refParts[2] || null;
+
+  if (!phone) {
+    console.warn('[wompi/webhook] Could not extract phone from reference:', reference);
+    return;
+  }
+
+  const { error } = await admin
+    .from('alert_subscribers')
+    .update({
+      plan: alertPlan,
+      active: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('phone', phone);
+
+  if (error) {
+    console.error('[wompi/webhook] Alert upgrade from ref error:', error.message);
+    return;
+  }
+
+  console.log(`[wompi/webhook] ✅ Alert upgrade (payment link): ${phone} → ${alertPlan}`);
 }

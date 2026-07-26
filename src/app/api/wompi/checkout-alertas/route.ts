@@ -1,23 +1,15 @@
 /**
- * POST /api/wompi/checkout-alertas — Public checkout for alert plans
+ * POST /api/wompi/checkout-alertas — Public checkout for alert plans.
+ * Uses Wompi API server-side to generate a payment link (avoids CORS/HTTP origin issues).
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { createHash } from 'crypto';
-import { createClient } from '@supabase/supabase-js';
 
 const ALERT_PLANS: Record<string, { name: string; cents: number }> = {
   pro: { name: 'Alertas Pro', cents: 38_000_00 },
   empresarial: { name: 'Alertas Empresarial', cents: 80_000_00 },
 };
 
-const CURRENCY = 'COP';
-
-function supabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
+const WOMPI_API = 'https://api.wompi.co/v1';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,44 +26,50 @@ export async function POST(request: NextRequest) {
     }
 
     const reference = `alertas-${planKey}-${phone}-${Date.now()}`;
-    const integrityKey = process.env.WOMPI_INTEGRITY_KEY || '';
+    const privateKey = process.env.WOMPI_PRIVATE_KEY || '';
 
-    // Generate Wompi integrity signature (required in production)
-    const integrity = integrityKey
-      ? createHash('sha256').update(`${reference}${plan.cents}${CURRENCY}${integrityKey}`).digest('hex')
-      : '';
-
-    // Save payment record
-    const admin = supabaseAdmin();
-    const { error } = await admin
-      .from('payments')
-      .insert({
-        plan: `alertas_${planKey}`,
-        amount_cents: plan.cents,
+    // Create payment link via Wompi API (server-side, no CORS)
+    const wompiRes = await fetch(`${WOMPI_API}/payment_links`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${privateKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: `${plan.name} — ${phone}`,
+        amount_in_cents: plan.cents,
+        currency: 'COP',
         reference,
-        status: 'pending',
-        metadata: { phone, product: 'alertas' },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+        redirect_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://148.230.90.171:8095'}/checkout-alertas?paid=true`,
+        expires_at: new Date(Date.now() + 24 * 3600_000).toISOString(),
+      }),
+    });
 
-    if (error) {
-      console.error('[checkout-alertas] Payment insert error:', error);
-      return NextResponse.json({ error: 'Failed to create payment' }, { status: 500 });
+    const data = await wompiRes.json();
+
+    if (!wompiRes.ok) {
+      console.error('[checkout-alertas] Wompi API error:', data);
+      return NextResponse.json({
+        error: 'Wompi rechazó la solicitud',
+        detail: data?.error?.reason || data?.error?.type || 'Error desconocido',
+      }, { status: 502 });
+    }
+
+    const paymentUrl = data?.data?.url || data?.data?.payment_url;
+    if (!paymentUrl) {
+      console.error('[checkout-alertas] No payment URL in response:', JSON.stringify(data));
+      return NextResponse.json({ error: 'Wompi no devolvió URL de pago' }, { status: 502 });
     }
 
     return NextResponse.json({
+      paymentUrl,
       reference,
-      amount: plan.cents,
-      currency: CURRENCY,
-      integrity,
       plan: planKey,
       planName: plan.name,
       phone,
-      wompiPublicKey: process.env.WOMPI_PUBLIC_KEY || '',
     });
   } catch (e) {
     console.error('[checkout-alertas] Error:', e);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
 }
