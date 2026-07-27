@@ -66,6 +66,16 @@ const SECURITY_HEADERS = [
 const nextConfig: NextConfig = {
   output: "standalone",
 
+  // Serve wasapea.html at / without a redirect
+  async rewrites() {
+    return [
+      {
+        source: '/',
+        destination: '/wasapea.html',
+      },
+    ]
+  },
+
   /**
    * Cross-origin dev access (Next.js 16).
    *
