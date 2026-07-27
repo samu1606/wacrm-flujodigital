@@ -25,15 +25,15 @@ export default function AlertasPage() {
           color: '#fff',
           textDecoration: 'none',
         }}>
-          WASAPEA<span style={{ color: '#a855f7' }}>PRO</span>
+          WASAPEA<span style={{ color: '#10b981' }}>PRO</span>
         </Link>
         <Link href="/login" style={{
           padding: '.45rem 1.1rem',
           borderRadius: '8px',
           fontWeight: 600,
           fontSize: '.85rem',
-          border: '1px solid #a855f7',
-          color: '#a855f7',
+          border: '1px solid #10b981',
+          color: '#10b981',
           textDecoration: 'none',
         }}>Dashboard</Link>
       </nav>
@@ -54,7 +54,7 @@ export default function AlertasPage() {
           borderRadius: '50px',
           padding: '.35rem .85rem',
           fontSize: '.78rem',
-          color: '#c4b5fd',
+          color: '#6ee7b7',
           marginBottom: '1.5rem',
         }}>
           📡 6 productos · Datos en tiempo real
@@ -67,7 +67,7 @@ export default function AlertasPage() {
           marginBottom: '1.25rem',
         }}>
           Recibe <span style={{
-            background: 'linear-gradient(135deg, #c4b5fd, #a855f7, #6366f1)',
+            background: 'linear-gradient(135deg, #6ee7b7, #10b981, #34d399)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>alertas inteligentes</span> directo en tu WhatsApp
@@ -80,7 +80,7 @@ export default function AlertasPage() {
           padding: '.75rem 2rem',
           borderRadius: '10px',
           fontWeight: 600,
-          background: '#a855f7',
+          background: '#10b981',
           color: '#fff',
           textDecoration: 'none',
         }}>Ver productos →</a>
@@ -98,7 +98,7 @@ export default function AlertasPage() {
       }}>
         {[{ num: '6', label: 'Productos' }, { num: '9', label: 'Workflows 24/7' }, { num: '0', label: 'Config requerida' }, { num: '10s', label: 'Para empezar' }].map(s => (
           <div key={s.label} style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#a855f7' }}>{s.num}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981' }}>{s.num}</div>
             <div style={{ fontSize: '.8rem', color: '#71717a', textTransform: 'uppercase', letterSpacing: '.05em' }}>{s.label}</div>
           </div>
         ))}
@@ -135,7 +135,7 @@ export default function AlertasPage() {
                   borderRadius: '50px',
                   fontWeight: 600,
                   background: p.tier === 'free' ? 'rgba(34,197,94,.12)' : 'rgba(168,85,247,.12)',
-                  color: p.tier === 'free' ? '#4ade80' : '#a855f7',
+                  color: p.tier === 'free' ? '#4ade80' : '#10b981',
                 }}>{p.tier === 'free' ? 'GRATIS' : 'PRO'}</span>
               </div>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>{p.name}</h3>
@@ -158,7 +158,7 @@ export default function AlertasPage() {
                 borderRadius: '8px',
                 fontWeight: 600,
                 fontSize: '.85rem',
-                background: '#a855f7',
+                background: '#10b981',
                 color: '#fff',
                 textDecoration: 'none',
               }}>Activar en WhatsApp →</a>
@@ -196,7 +196,7 @@ export default function AlertasPage() {
                 justifyContent: 'center',
                 fontSize: '1.25rem',
                 fontWeight: 800,
-                color: '#a855f7',
+                color: '#10b981',
                 marginBottom: '1rem',
               }}>{s.num}</div>
               <h4 style={{ fontSize: '.95rem', fontWeight: 700, marginBottom: '.35rem' }}>{s.title}</h4>
@@ -226,7 +226,7 @@ export default function AlertasPage() {
             borderRadius: '10px',
             fontWeight: 700,
             fontSize: '1rem',
-            background: '#a855f7',
+            background: '#10b981',
             color: '#fff',
             textDecoration: 'none',
           }}>Empezar ahora →</a>
@@ -242,7 +242,7 @@ export default function AlertasPage() {
         fontSize: '.78rem',
       }}>
         <p>
-          <Link href="/" style={{ color: '#a855f7', textDecoration: 'none' }}>WASAPEA PRO</Link> · Suite de alertas inteligentes por WhatsApp · © 2026
+          <Link href="/" style={{ color: '#10b981', textDecoration: 'none' }}>WASAPEA PRO</Link> · Suite de alertas inteligentes por WhatsApp · © 2026
         </p>
       </footer>
     </div>
