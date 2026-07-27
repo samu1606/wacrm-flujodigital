@@ -1815,7 +1815,7 @@
       <div class="nav-menu" id="nav-menu">
         <a href="#como-funciona" class="nav-link">Cómo Funciona</a>
         <a href="#funciones" class="nav-link">Funciones</a>
-        <a href="#alertas-section" class="nav-link">Alertas</a>
+        <a href="/alertas" class="nav-link">Alertas</a>
         <a href="#precios" class="nav-link">Precios</a>
         <a href="#faq" class="nav-link">FAQ</a>
         
@@ -2315,192 +2315,29 @@
 
   <!-- PRICING -->
   
-  <!-- ===== ALERTAS SECTION ===== -->
+  <!-- ===== TOP BANNER: ALERTAS MARKETPLACE ===== -->
   <style>
-    .alertas-section {
-      padding: 80px 0;
-      position: relative;
-    }
-    .alertas-section::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 500px;
-      height: 500px;
-      background: rgba(139, 92, 246, 0.04);
-      border-radius: 50%;
-      filter: blur(120px);
-      pointer-events: none;
-      transform: translate(-50%, -50%);
-    }
-    .alertas-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 16px;
-      margin-top: 48px;
-      position: relative;
-      z-index: 2;
-    }
-    .alerta-card {
-      background: rgba(255,255,255,.02);
-      border: 1px solid rgba(255,255,255,.06);
-      border-radius: 16px;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .alerta-card:hover {
-      border-color: rgba(139, 92, 246, 0.3);
-      background: rgba(255,255,255,.03);
-      transform: translateY(-2px);
-    }
-    .alerta-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-    .alerta-card-icon {
-      font-size: 28px;
-    }
-    .alerta-card-tier {
-      font-size: 10px;
-      padding: 3px 10px;
-      border-radius: 50px;
-      font-weight: 700;
-    }
-    .alerta-card-tier.free {
-      background: rgba(34, 197, 94, 0.1);
-      color: #4ade80;
-    }
-    .alerta-card-tier.pro {
-      background: rgba(168, 85, 247, 0.1);
-      color: #c084fc;
-    }
-    .alerta-card h4 {
-      font-size: 16px;
-      font-weight: 700;
-      margin: 0;
-    }
-    .alerta-card p {
-      font-size: 13px;
-      color: #94A3B8;
-      flex: 1;
-      margin: 0;
-      line-height: 1.5;
-    }
-    .alerta-card-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .alerta-tag {
-      font-size: 10px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: rgba(255,255,255,.04);
-      border: 1px solid rgba(255,255,255,.06);
-      color: #94A3B8;
-    }
-    .alerta-card-btn {
-      display: block;
-      width: 100%;
-      padding: 10px;
-      border-radius: 10px;
-      font-weight: 600;
-      font-size: 13px;
+    .top-alertas-banner {
+      background: linear-gradient(135deg, rgba(168,85,247,0.08), rgba(99,102,241,0.06));
+      border-bottom: 1px solid rgba(168,85,247,0.12);
+      padding: 10px 0;
       text-align: center;
-      background: linear-gradient(135deg, #8B5CF6, #7c3aed);
-      color: white;
-      transition: all 0.2s;
+      font-size: 0.9rem;
     }
-    .alerta-card-btn:hover {
-      background: linear-gradient(135deg, #7c3aed, #6d28d9);
-      transform: translateY(-1px);
+    .top-alertas-banner a {
+      color: #c4b5fd;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+    .top-alertas-banner a:hover {
+      color: #a855f7;
     }
   </style>
-
-  <section class="alertas-section" id="alertas-section">
-    <div class="container">
-      <div class="section-title-wrapper">
-        <div class="badge">📡 Servicios de Alertas</div>
-        <h2 class="section-title">Recibe datos en tiempo real por WhatsApp</h2>
-        <p class="section-subtitle">Monitoreo 24/7 de cripto, forex, metales, TRM, licitaciones y más. Sin instalar apps.</p>
-      </div>
-
-      <div class="alertas-grid">
-        
-          <div class="alerta-card">
-            <div class="alerta-card-header">
-              <span class="alerta-card-icon">💰</span>
-              <span class="alerta-card-tier free">GRATIS</span>
-            </div>
-            <h4>CryptoTrader</h4>
-            <p>BTC, ETH, USDT con variación 24h. Actualización cada 6 horas.</p>
-            <div class="alerta-card-tags"><span class="alerta-tag">BTC</span><span class="alerta-tag">ETH</span><span class="alerta-tag">USDT</span></div>
-            <a href="https://wa.me/573106055920?text=Quiero+CryptoTrader" class="alerta-card-btn">Activar en WhatsApp →</a>
-          </div>
-        
-          <div class="alerta-card">
-            <div class="alerta-card-header">
-              <span class="alerta-card-icon">💱</span>
-              <span class="alerta-card-tier free">GRATIS</span>
-            </div>
-            <h4>ForexAlert</h4>
-            <p>EUR, GBP, JPY, CAD, AUD frente al USD. Ideal para importadores.</p>
-            <div class="alerta-card-tags"><span class="alerta-tag">EUR/USD</span><span class="alerta-tag">GBP/USD</span><span class="alerta-tag">7 pares</span></div>
-            <a href="https://wa.me/573106055920?text=Quiero+ForexAlert" class="alerta-card-btn">Activar en WhatsApp →</a>
-          </div>
-        
-          <div class="alerta-card">
-            <div class="alerta-card-header">
-              <span class="alerta-card-icon">🥇</span>
-              <span class="alerta-card-tier free">GRATIS</span>
-            </div>
-            <h4>GoldTrack</h4>
-            <p>Oro, plata, platino y paladio. Precios diarios en USD por onza.</p>
-            <div class="alerta-card-tags"><span class="alerta-tag">XAU</span><span class="alerta-tag">XAG</span><span class="alerta-tag">XPT</span><span class="alerta-tag">XPD</span></div>
-            <a href="https://wa.me/573106055920?text=Quiero+GoldTrack" class="alerta-card-btn">Activar en WhatsApp →</a>
-          </div>
-        
-          <div class="alerta-card">
-            <div class="alerta-card-header">
-              <span class="alerta-card-icon">💵</span>
-              <span class="alerta-card-tier free">GRATIS</span>
-            </div>
-            <h4>TRM Alertas</h4>
-            <p>TRM Colombia diaria + alertas por umbral. Conversiones rápidas.</p>
-            <div class="alerta-card-tags"><span class="alerta-tag">COP/USD</span><span class="alerta-tag">Diaria 8am</span></div>
-            <a href="https://wa.me/573106055920?text=Quiero+TRM+Alertas" class="alerta-card-btn">Activar en WhatsApp →</a>
-          </div>
-        
-          <div class="alerta-card">
-            <div class="alerta-card-header">
-              <span class="alerta-card-icon">📋</span>
-              <span class="alerta-card-tier pro">PRO</span>
-            </div>
-            <h4>SECOP Alertas</h4>
-            <p>Licitaciones públicas filtradas por keywords. Oportunidades de contratación.</p>
-            <div class="alerta-card-tags"><span class="alerta-tag">SECOP II</span><span class="alerta-tag">Cada 6h</span></div>
-            <a href="https://wa.me/573106055920?text=Quiero+SECOP+Alertas" class="alerta-card-btn">Activar en WhatsApp →</a>
-          </div>
-        
-          <div class="alerta-card">
-            <div class="alerta-card-header">
-              <span class="alerta-card-icon">🛡️</span>
-              <span class="alerta-card-tier pro">PRO</span>
-            </div>
-            <h4>Vigilante Digital</h4>
-            <p>Monitoreo de sitios web 24/7. Alertas si algo falla o cambia.</p>
-            <div class="alerta-card-tags"><span class="alerta-tag">Uptime</span><span class="alerta-tag">Cambios</span><span class="alerta-tag">24/7</span></div>
-            <a href="https://wa.me/573106055920?text=Quiero+Vigilante+Digital" class="alerta-card-btn">Activar en WhatsApp →</a>
-          </div>
-        
-      </div>
-    </div>
-  </section>
+  <div class="top-alertas-banner">
+    ⚡️ ¿Buscas alertas en tiempo real de Crypto, TRM, SECOP o Caídas Web? 
+    <a href="/alertas">Ir al Marketplace de Alertas →</a>
+  </div>
 
 <section id="precios" class="pricing">
     <div class="container">
