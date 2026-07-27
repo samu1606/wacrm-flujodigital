@@ -19,7 +19,7 @@ export default function AlertasPage() {
         padding: '1rem 1.5rem',
         borderBottom: '1px solid rgba(255,255,255,.06)',
       }}>
-        <Link href="/wasapea.html" style={{
+        <Link href="/" style={{
           fontWeight: 800,
           fontSize: '1.1rem',
           color: '#fff',
@@ -242,7 +242,7 @@ export default function AlertasPage() {
         fontSize: '.78rem',
       }}>
         <p>
-          <Link href="/wasapea.html" style={{ color: '#a855f7', textDecoration: 'none' }}>WASAPEA PRO</Link> · Suite de alertas inteligentes por WhatsApp · © 2026
+          <Link href="/" style={{ color: '#a855f7', textDecoration: 'none' }}>WASAPEA PRO</Link> · Suite de alertas inteligentes por WhatsApp · © 2026
         </p>
       </footer>
     </div>

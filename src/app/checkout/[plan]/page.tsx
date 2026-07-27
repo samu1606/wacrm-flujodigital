@@ -11,7 +11,7 @@ export default async function CheckoutPage({
   // Validate plan
   const validPlans = ['emprendedor', 'pro', 'business']
   if (!validPlans.includes(plan)) {
-    redirect('/wasapea.html#precios')
+    redirect('/')
   }
 
   const supabase = await createClient()
