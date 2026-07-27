@@ -1,5 +1,21 @@
 import Link from "next/link";
 
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "WASAPEA PRO — CRM SaaS de Ventas por WhatsApp",
+  description:
+    "Bandeja multiagente, pipelines Kanban, difusiones masivas y automatizaciones. CRM profesional para equipos que venden por WhatsApp.",
+  robots: { index: true, follow: true },
+  openGraph: {
+    title: "WASAPEA PRO — CRM SaaS de Ventas por WhatsApp",
+    description:
+      "Bandeja multiagente, pipelines Kanban, difusiones masivas y automatizaciones.",
+    url: "https://wasapeapro.com",
+    type: "website",
+  },
+};
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#050508] text-slate-100 font-sans overflow-x-hidden">
