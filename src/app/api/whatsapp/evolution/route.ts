@@ -753,6 +753,182 @@ function normalizePhone(phone: string): string {
   return (phone || '').replace(/[@s.whatsapp.net]/g, '').replace(/[^0-9]/g, '')
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Polling sync mode: fetch recent chats from Evolution and sync new messages
+  const sync = request.nextUrl.searchParams.get('sync')
+  if (sync === 'true' || sync === '1') {
+    return await syncMessages(request)
+  }
   return NextResponse.json({ status: 'ok' })
+}
+
+async function syncMessages(request: NextRequest) {
+  const instanceName = request.nextUrl.searchParams.get('instance') || ''
+  const accountId = request.nextUrl.searchParams.get('account') || ''
+
+  if (!instanceName || !accountId) {
+    return NextResponse.json({ synced: 0, error: 'missing_instance_or_account' }, { status: 400 })
+  }
+
+  const admin = supabaseAdmin()
+  let synced = 0
+
+  try {
+    const chatsUrl = `${EVO_URL}/chat/findChats/${instanceName}`
+    const chatsRes = await fetch(chatsUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: EVO_KEY },
+      body: JSON.stringify({}),
+    })
+
+    if (!chatsRes.ok) {
+      const errText = await chatsRes.text()
+      console.error(`[sync] Evolution findChats failed (${chatsRes.status}):`, errText.slice(0, 200))
+      return NextResponse.json({ synced: 0, error: `evo_error_${chatsRes.status}` }, { status: 502 })
+    }
+
+    const chats = await chatsRes.json()
+    if (!Array.isArray(chats) || chats.length === 0) {
+      return NextResponse.json({ synced: 0, message: 'no_chats' })
+    }
+
+    // Get user_id for this account (needed for contact/conversation creation)
+    const { data: profiles } = await admin
+      .from('profiles')
+      .select('user_id')
+      .eq('account_id', accountId)
+      .limit(1)
+    const userId = profiles?.[0]?.user_id || ''
+    if (!userId) {
+      return NextResponse.json({ synced: 0, error: 'no_user_for_account' })
+    }
+
+    for (const chat of chats) {
+      const remoteJid = (chat?.remoteJid || '').replace('@s.whatsapp.net', '').replace('@g.us', '')
+      const phone = normalizePhone(remoteJid)
+      const lastMsg = chat?.lastMessage
+      if (!phone || !lastMsg || !lastMsg.key) continue
+
+      const msgId = lastMsg.key.id || ''
+      if (!msgId) continue
+
+      // Dedup: skip if message already in CRM
+      const { data: existing } = await admin
+        .from('messages')
+        .select('id')
+        .eq('message_id', msgId)
+        .limit(1)
+      if (existing && existing.length > 0) continue
+
+      // Get or create contact
+      const { data: contacts } = await admin
+        .from('contacts')
+        .select('id')
+        .eq('phone', phone)
+        .eq('account_id', accountId)
+        .limit(1)
+
+      let contactId: string
+      if (contacts && contacts.length > 0) {
+        contactId = contacts[0].id
+      } else {
+        const { data: newContact } = await admin
+          .from('contacts')
+          .insert({ phone, name: chat?.pushName || phone, account_id: accountId, user_id: userId })
+          .select('id')
+          .single()
+        if (!newContact) continue
+        contactId = newContact.id
+      }
+
+      // Get or create conversation
+      const { data: convs } = await admin
+        .from('conversations')
+        .select('id')
+        .eq('contact_id', contactId)
+        .limit(1)
+
+      let convId: string
+      if (convs && convs.length > 0) {
+        convId = convs[0].id
+      } else {
+        const { data: newConv } = await admin
+          .from('conversations')
+          .insert({ contact_id: contactId, account_id: accountId, user_id: userId, unread_count: 0 })
+          .select('id')
+          .single()
+        if (!newConv) continue
+        convId = newConv.id
+      }
+
+      // Parse message content
+      const msg = lastMsg.message || {}
+      const isFromMe = lastMsg.key.fromMe === true
+      let contentText = ''
+      let contentType = 'text'
+
+      if (msg.conversation) {
+        contentText = msg.conversation
+      } else if (msg.extendedTextMessage?.text) {
+        contentText = msg.extendedTextMessage.text
+      } else if (msg.imageMessage) {
+        contentType = 'image'
+        contentText = msg.imageMessage.caption || '📷 Imagen'
+      } else if (msg.videoMessage) {
+        contentType = 'video'
+        contentText = msg.videoMessage.caption || '🎬 Video'
+      } else if (msg.audioMessage || msg.pttMessage) {
+        contentType = 'audio'
+        contentText = '🎵 Audio'
+      } else if (msg.documentMessage) {
+        contentType = 'document'
+        contentText = msg.documentMessage.fileName || '📄 Documento'
+      } else if (msg.stickerMessage) {
+        contentType = 'image'
+        contentText = '📱 Sticker'
+      } else {
+        continue
+      }
+
+      if (!contentText && contentType === 'text') continue
+
+      // Insert message
+      const senderType = isFromMe ? 'agent' : 'customer'
+      const { error: msgErr } = await admin
+        .from('messages')
+        .insert({
+          conversation_id: convId,
+          sender_type: senderType,
+          content_type: contentType,
+          content_text: contentText,
+          message_id: msgId,
+          status: isFromMe ? 'sent' : 'delivered',
+        })
+
+      if (msgErr) {
+        console.error(`[sync] Insert error:`, msgErr.message)
+        continue
+      }
+
+      // Update conversation
+      const unreadInc = isFromMe ? 0 : 1
+      await admin
+        .from('conversations')
+        .update({
+          last_message_text: contentText.length > 100 ? contentText.slice(0, 97) + '...' : contentText,
+          last_message_at: new Date().toISOString(),
+          unread_count: unreadInc,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', convId)
+
+      synced++
+    }
+
+    console.log(`[sync] Synced ${synced} messages for ${instanceName}`)
+    return NextResponse.json({ synced, instance: instanceName, account: accountId })
+  } catch (err: any) {
+    console.error(`[sync] Error:`, err.message)
+    return NextResponse.json({ synced, error: err.message }, { status: 500 })
+  }
 }
